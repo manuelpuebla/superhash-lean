@@ -45,8 +45,8 @@ theorem designLoop_master (state : DesignLoopState)
   · -- Part 2: Pool soundness (pool unchanged through loop)
     intro vr hvr env
     -- Pool is preserved through the loop (each step preserves it)
-    have h_preserve : (designLoop state).pool = state.pool := by
-      sorry  -- designLoopStep_preserves_pool composed inductively over fuel
+    have h_preserve : (designLoop state).pool = state.pool :=
+      designLoop_pool_eq state
     rw [h_preserve] at hvr
     exact h_pool_sound vr hvr env
 

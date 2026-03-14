@@ -59,6 +59,21 @@ theorem designLoopStep_preserves_pool (state : DesignLoopState) :
   simp [designLoopStep]
   split <;> rfl
 
+/-- Design loop preserves the rule pool through all iterations.
+    Composed inductively from designLoopStep_preserves_pool. -/
+theorem designLoop_pool_eq (state : DesignLoopState) :
+    (designLoop state).pool = state.pool := by
+  unfold designLoop
+  split
+  · rfl
+  · have h_step := designLoopStep_preserves_pool state
+    have h_ih := designLoop_pool_eq (designLoopStep state)
+    rw [h_ih, h_step]
+termination_by state.fuel
+decreasing_by
+  simp_wf
+  exact designLoopStep_fuel_decreasing state (by omega)
+
 -- ============================================================
 -- Non-vacuity examples
 -- ============================================================

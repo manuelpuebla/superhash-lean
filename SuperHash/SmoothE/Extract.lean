@@ -48,13 +48,35 @@ def extractParetoV2 (g : EGraph CryptoOp) (suite : CostSuite)
 -- Correctness properties
 -- ============================================================
 
+/-- foldl dedup doesn't grow beyond input length.
+    The accumulator starts empty and adds at most one element per input element. -/
+private theorem foldl_dedup_length_le {α : Type} (f : α → α → Bool) :
+    ∀ (input : List α) (acc : List α),
+    (input.foldl (fun acc pair =>
+      if acc.any (fun p => f p pair) then acc else pair :: acc) acc).length
+    ≤ acc.length + input.length := by
+  intro input
+  induction input with
+  | nil => intro acc; simp
+  | cons x xs ih =>
+    intro acc
+    simp only [List.foldl, List.length_cons]
+    split
+    · have := ih acc; omega
+    · have h := ih (x :: acc); simp only [List.length_cons] at h; omega
+
 /-- Output length is bounded by suite size.
-    filterMap produces ≤ input, dedup ≤ input, filter ≤ input. -/
+    Composes: filterMap ≤ input, foldl_dedup ≤ filterMap, filter ≤ dedup. -/
 theorem extractParetoV2_length_le (g : EGraph CryptoOp) (suite : CostSuite)
     (costFuel rootId : Nat) :
     (extractParetoV2 g suite costFuel rootId).length ≤ suite.length := by
-  simp [extractParetoV2]
-  sorry -- bound proof: filterMap ≤ input, dedup ≤ input, filter ≤ input
+  simp only [extractParetoV2]
+  have h_fm := @List.length_filterMap_le CostFunction _
+    (fun cf => extractWithCost g cf costFuel rootId) suite
+  have h_dd := foldl_dedup_length_le (fun (p pair : CryptoExpr × SecurityMetrics) => p.2 == pair.2)
+    (suite.filterMap fun cf => extractWithCost g cf costFuel rootId) []
+  simp at h_dd
+  exact Nat.le_trans (List.length_filter_le ..) (Nat.le_trans h_dd h_fm)
 
 -- ============================================================
 -- Backward compatibility with v1.0

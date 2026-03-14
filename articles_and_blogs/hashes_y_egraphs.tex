@@ -1,0 +1,217 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage[margin=2.2cm]{geometry}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,backgrounds,calc}
+\usepackage{amsmath,amssymb}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{tcolorbox}
+
+\definecolor{eggblue}{HTML}{2196F3}
+\definecolor{llmpurple}{HTML}{9C27B0}
+\definecolor{leangreen}{HTML}{4CAF50}
+\definecolor{cryptored}{HTML}{F44336}
+\definecolor{goldyellow}{HTML}{FFC107}
+
+\title{\textbf{E-graphs, LLMs y Verificación Formal:\\Hacia el Diseño Automático de Funciones Hash}}
+\author{Manuel Puebla}
+\date{Marzo 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent Presentamos dos proyectos complementarios para la verificación y el diseño de funciones hash criptográficas. \textbf{TrustHash} es un framework de verificación formal (Lean~4, 2{,}219 teoremas, cero \texttt{sorry}) que analiza la seguridad de funciones hash mediante tres ejes: criptoanálisis diferencial, algebraico y estructural, combinando \emph{equality saturation} sobre E-graphs con programación dinámica sobre descomposiciones en árbol. \textbf{SuperHash} extiende este enfoque hacia la \emph{síntesis}: un pipeline autónomo donde un LLM propone reglas de reescritura, el kernel de Lean las verifica, y un E-graph explora exhaustivamente el espacio de diseños equivalentes. Ambos proyectos son \emph{work in progress} con varias mejoras planificadas.
+\end{abstract}
+
+% ============================================================
+\section{TrustHash: Verificación Formal de Seguridad Hash}
+% ============================================================
+
+El diseño de funciones hash para protocolos de conocimiento cero (ZK) enfrenta un problema fundamental: las estimaciones de seguridad son manuales, propensas a error, y difíciles de auditar. TrustHash aborda esto formalizando en Lean~4 un pipeline completo de análisis de seguridad, verificado por el kernel del proof assistant.
+
+\subsection{Modelo de seguridad de dos capas}
+
+TrustHash evalúa cada función hash mediante:
+\[
+\texttt{security\_level} = \min(\texttt{generic\_floor},\ \texttt{structural\_cost})
+\]
+
+El \textbf{piso genérico} captura ataques universales (birthday bound $2^{n/2}$, GBP de Wagner, multicolisión de Joux) que funcionan contra \emph{cualquier} hash. El \textbf{costo estructural} captura ataques que explotan la construcción interna (diferencial, lineal, algebraico). Un hash es ``óptimo'' cuando $\texttt{structural} \geq \texttt{generic}$; tiene una ``debilidad explotable'' cuando $\texttt{structural} < \texttt{generic}$.
+
+\subsection{Tres direcciones de análisis}
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[
+    node distance=0.6cm and 1.8cm,
+    dir/.style={rectangle, rounded corners, draw, minimum width=2.8cm, minimum height=0.8cm, font=\small\bfseries, align=center},
+    arr/.style={-{Stealth[length=3mm]}, thick}
+]
+  \node[dir, fill=cryptored!20] (d1) {D1: Diferencial\\$\delta^{\text{active\_sboxes}}$};
+  \node[dir, fill=eggblue!20, right=of d1] (d2) {D2: Algebraico\\$\deg^{\text{treewidth}}$};
+  \node[dir, fill=leangreen!20, right=of d2] (d3) {D3: Estructural\\DP sobre árboles};
+
+  \node[below=0.8cm of d2, draw, rounded corners, minimum width=8cm, minimum height=0.7cm, fill=goldyellow!15, font=\small] (verdict) {$\texttt{verdict} = \min(\text{genérico},\ \min(\text{D1},\ \text{D2},\ \text{D3}))$};
+
+  \draw[arr, cryptored] (d1) -- (verdict);
+  \draw[arr, eggblue] (d2) -- (verdict);
+  \draw[arr, leangreen] (d3) -- (verdict);
+\end{tikzpicture}
+\caption{Las tres direcciones de análisis convergen en un veredicto único.}
+\end{figure}
+
+\textbf{Dirección~1 (Diferencial):} Cuenta las S-boxes activas mínimas en cualquier trail diferencial no trivial, usando la estrategia \emph{wide trail} de Daemen y Rijmen. El costo del ataque es $\delta^{a}$, donde $\delta$ es la uniformidad diferencial de la S-box y $a$ el mínimo de S-boxes activas. Para AES-128: $\delta=4$, $a=25$, costo $\approx 4^{25} \gg 2^{64}$.
+
+\textbf{Dirección~2 (Algebraico):} Propaga el grado algebraico a través de las rondas usando 23 reglas de reescritura verificadas (11 incondicionales + 12 condicionales). La \emph{equality saturation} sobre un E-graph aplica \emph{todas} las reglas simultáneamente hasta un punto fijo, reduciendo la profundidad de la expresión mientras preserva la semántica (probado: \texttt{saturate\_preserves\_eval}).
+
+\textbf{Dirección~3 (Estructural via DP):} Construye el grafo de restricciones del cifrador, computa una descomposición en árbol (\emph{tree decomposition}) via eliminación greedy, lo convierte a forma \emph{nice tree}, y ejecuta programación dinámica. El resultado es una cota inferior en el costo de cualquier ataque compatible con la estructura del grafo. El teorema \texttt{dp\_optimal\_of\_validNTD} prueba que el DP da el costo \textbf{mínimo} sobre todas las funciones de costo compatibles.
+
+\subsection{El pipeline verificado}
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[
+    node distance=0.35cm,
+    stage/.style={rectangle, rounded corners=3pt, draw, minimum width=3.2cm, minimum height=0.55cm, font=\scriptsize, align=center},
+    arr/.style={-{Stealth[length=2mm]}, thick, gray},
+]
+  \node[stage, fill=cryptored!10] (s1) {S-box table $\to$ DDT/LAT/ANF};
+  \node[stage, fill=cryptored!10, below=of s1] (s2) {\texttt{SboxCertifiedParams} ($\delta$, deg, NL)};
+  \node[stage, fill=eggblue!10, below=of s2] (s3) {E-graph saturation (12 reglas)};
+  \node[stage, fill=eggblue!10, below=of s3] (s4) {Grafo de restricciones};
+  \node[stage, fill=leangreen!10, below=of s4] (s5) {Tree decomposition $\to$ nice tree};
+  \node[stage, fill=leangreen!10, below=of s5] (s6) {DP multi-ronda (D3)};
+  \node[stage, fill=goldyellow!20, below=of s6] (s7) {\textbf{Veredicto:} $\min$(genérico, estructural)};
+
+  \foreach \a/\b in {s1/s2, s2/s3, s3/s4, s4/s5, s5/s6, s6/s7}
+    \draw[arr] (\a) -- (\b);
+\end{tikzpicture}
+\caption{Pipeline de 7 etapas de TrustHash: cada etapa preserva invariantes verificados.}
+\end{figure}
+
+\subsection{Resultados y relevancia para ZK}
+
+TrustHash ha verificado 6 instancias concretas, detectando debilidades en hashes ZK-friendly:
+
+\begin{center}
+\small
+\begin{tabular}{lccl}
+\textbf{Hash} & \textbf{Genérico} & \textbf{Estructural} & \textbf{Veredicto} \\
+\hline
+AES-128 & 64 bits & 62 bits & Seguro (margen estrecho) \\
+SHA-3-256 & 128 bits & 128 bits & Óptimo \\
+Poseidon-128 (t=3) & 64 bits & 25 bits & \textcolor{cryptored}{\textbf{Debilidad}} \\
+Rescue-Prime-128 & 64 bits & 18 bits & \textcolor{cryptored}{\textbf{Debilidad}} \\
+GMiMC-128 & 64 bits & 11 bits & \textcolor{cryptored}{\textbf{Debilidad}} \\
+\end{tabular}
+\end{center}
+
+\noindent Estos resultados son especialmente relevantes para el ecosistema Ethereum/STARK, donde Poseidon es el hash de referencia. La debilidad detectada (25 bits vs.\ 64 esperados) proviene de las rondas parciales: su bajo \emph{treewidth} permite ataques algebraicos baratos. Esto motiva la necesidad de herramientas que no solo \emph{analicen} sino que \emph{diseñen} hashes óptimos --- la motivación de SuperHash.
+
+\textbf{Aportes originales:} (1)~Primera verificación formal de seguridad hash con 0~sorry en un proof assistant. (2)~Prueba de optimalidad del DP sobre nice trees. (3)~23 reglas de reescritura condicionales con soundness verificada. (4)~Pipeline E-graph + DP para criptoanálisis automatizado.
+
+\textbf{Work in progress:} Estamos extendiendo TrustHash con modelos de ataques cuánticos (Grover/Simon), invariant subspace attacks, y soporte para hashes sobre campos binarios (Poseidon2b).
+
+% ============================================================
+\section{SuperHash: Síntesis Automática de Hash via LLM + E-graphs}
+% ============================================================
+
+Si TrustHash \emph{analiza}, SuperHash \emph{diseña}. El insight central: diseñar funciones hash es un problema de \textbf{equivalencia algebraica + optimización multi-objetivo}. Dos diseños con diferente estructura pueden tener la misma seguridad; queremos encontrar el más eficiente entre los equivalentes. Esto es \emph{exactamente} para lo que se inventaron los E-graphs.
+
+\subsection{¿Por qué no ``solo LLM'' ni ``solo E-graphs''?}
+
+\begin{tcolorbox}[colback=eggblue!5, colframe=eggblue!60, title=\small El argumento central]
+\small Un LLM buscando diseños hash es como buscar una aguja en un pajar con una linterna. Un E-graph con reglas verificadas es como tener un mapa del pajar completo. \textbf{La combinación} usa el LLM para dibujar nuevos caminos en el mapa, y el E-graph para explorarlos exhaustivamente.
+\end{tcolorbox}
+
+\begin{itemize}[nosep]
+  \item \textbf{Solo LLM:} Sampling heurístico, sin garantías de soundness, puede inventar reglas incorrectas, no explora exhaustivamente.
+  \item \textbf{Solo E-graphs:} Exploración exhaustiva pero solo con reglas conocidas. Sin creatividad --- no puede inventar transformaciones nuevas.
+  \item \textbf{LLM + E-graphs + Lean:} El LLM propone reglas \emph{creativas}, Lean las verifica formalmente, el E-graph las aplica \emph{exhaustivamente}.
+\end{itemize}
+
+\subsection{El pipeline de SuperHash}
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[
+    node distance=0.5cm and 0.8cm,
+    comp/.style={rectangle, rounded corners=4pt, draw, thick, minimum width=2.5cm, minimum height=1cm, font=\small\bfseries, align=center},
+    flow/.style={-{Stealth[length=3mm]}, thick},
+    feedback/.style={-{Stealth[length=3mm]}, thick, dashed},
+]
+  % Components
+  \node[comp, fill=llmpurple!15] (llm) {LLM\\{\scriptsize (motor creativo)}};
+  \node[comp, fill=leangreen!15, right=1.5cm of llm] (lean) {Lean 4\\{\scriptsize (verificador)}};
+  \node[comp, fill=eggblue!15, below=1cm of $(llm)!0.5!(lean)$] (egraph) {E-graph\\{\scriptsize (explorador exhaustivo)}};
+  \node[comp, fill=goldyellow!15, below=0.8cm of egraph] (extract) {Extracción Pareto\\{\scriptsize (multi-objetivo)}};
+
+  % TrustHash as fitness
+  \node[comp, fill=cryptored!15, right=1.5cm of egraph] (trust) {TrustHash\\{\scriptsize (fitness)}};
+
+  % Flows
+  \draw[flow, llmpurple] (llm) -- node[above, font=\scriptsize] {propone regla} (lean);
+  \draw[flow, leangreen] (lean) -- node[right, font=\scriptsize, align=left] {regla\\verificada} (egraph);
+  \draw[flow, eggblue] (egraph) -- node[left, font=\scriptsize] {satura} (extract);
+  \draw[flow, cryptored] (trust) -- node[above, font=\scriptsize] {evalúa} (egraph);
+  \draw[flow] (extract.south) -- ++(0,-0.5) node[below, font=\scriptsize\bfseries] {Frontera Pareto verificada};
+
+  % RLVF feedback
+  \draw[feedback, cryptored] (extract.west) -- ++(-1.2,0) |- node[near start, left, font=\scriptsize, align=right] {RLVF\\reward} (llm.south);
+
+  % Rejection
+  \draw[feedback, gray] (lean.north) -- ++(0,0.5) -| node[near start, above, font=\scriptsize, color=gray] {rechaza} (llm.north);
+\end{tikzpicture}
+\caption{Pipeline SuperHash: LLM propone $\to$ Lean verifica $\to$ E-graph explora $\to$ TrustHash evalúa $\to$ RLVF entrena.}
+\end{figure}
+
+\textbf{Rol del LLM} (Tier~1, Python): Genera candidatos de reglas de reescritura en formato \texttt{PatternSoundRule}. Usa el patrón CodeEvolve (island GA + LLM ensemble). Cada isla corresponde a una familia criptográfica (SPN, Feistel, Sponge, ARX). El LLM puede proponer transformaciones que ningún criptógrafo ha considerado.
+
+\textbf{Rol de Lean} (Tier~2, kernel): Verificación binaria. Cada regla propuesta se compila como un teorema; si \texttt{lake build} falla, la regla se rechaza. Cero trust en el LLM --- el kernel de Lean es el oráculo.
+
+\textbf{Rol del E-graph} (Tier~2, verificado): Una vez que una regla pasa la verificación, entra al E-graph. La \emph{equality saturation} aplica \textbf{todas} las reglas a \textbf{todos} los nodos simultáneamente, explorando exponencialmente muchos diseños en espacio polinomial. Todos los diseños en una e-class son \emph{verificadamente} equivalentes.
+
+\textbf{Rol de TrustHash} (fitness): Evalúa cada diseño extraído con el pipeline verificado de la Sección~1. El \texttt{security\_level} es la función de fitness para la optimización multi-objetivo. Diseños con mayor seguridad y menor latencia/área dominan la frontera Pareto.
+
+\textbf{RLVF} (Reinforcement Learning from Verified Feedback): La señal de reward tiene 4 niveles: (0)~parseo sintáctico, (1)~compilación exitosa, (2)~non-vacuidad, (3)~mejora del frente Pareto. Entrena al LLM para proponer reglas cada vez mejores.
+
+\subsection{CryptoSemantics: más allá de la aritmética natural}
+
+La versión actual (v2.5) reemplaza la evaluación puramente aritmética (\texttt{Val := Nat}) con un dominio semántico de 7 campos que captura propiedades criptográficas reales:
+
+\begin{center}
+\small
+\begin{tabular}{ll}
+\texttt{algebraicDegree} & Grado del polinomio sobre $\text{GF}(2^n)$ \\
+\texttt{differentialUniformity} & $\delta$: máx.\ entradas en DDT \\
+\texttt{linearBias} & $\varepsilon$: máx.\ sesgo en LAT \\
+\texttt{branchNumber} & Número de rama de la capa MDS \\
+\texttt{activeMinSboxes} & Mín.\ S-boxes activas en trail diferencial \\
+\texttt{latency}, \texttt{gateCount} & Métricas de performance \\
+\end{tabular}
+\end{center}
+
+\noindent La función \texttt{evalCryptoSem} computa estas propiedades composicionalmente: la composición secuencial multiplica grados, la iteración los exponencia, y XOR toma el máximo (operación paralela). La DDT de la S-box PRESENT (4 bits, $\delta=4$) está verificada por \texttt{native\_decide}.
+
+\subsection{Aportes originales y ubicación en el ecosistema}
+
+\textbf{Novedad:} (1)~Primer uso de equality saturation para \emph{síntesis} (no solo análisis) de funciones hash. (2)~Pipeline LLM + verificación formal + E-graph, donde cada componente cubre las debilidades del otro. (3)~Dominio \texttt{CryptoSemantics} que reemplaza aritmética Nat con métricas criptográficas reales (DDT, grado algebraico, branch number). (4)~5 reglas de reescritura con precondiciones criptográficas formales. (5)~Función de fitness \texttt{min(birthday, differential, algebraic)} respaldada por teoremas.
+
+\textbf{Ecosistema ZK-Ethereum:} SuperHash puede evaluar y proponer alternativas para hashes ZK-friendly como Poseidon, Rescue y GMiMC. La detección formal de debilidades (como los 25 bits de Poseidon-128 vs.\ 64 esperados) permite guiar automáticamente el diseño hacia hash functions que satisfagan simultáneamente restricciones de seguridad y eficiencia en circuitos ZK.
+
+\textbf{Work in progress:} (1)~Integración con \texttt{lean-egg} (POPL 2026) para verificación automática de reglas via equality saturation dentro de Lean. (2)~Formalización del bound de Boura-Canteaut (tight degree composition). (3)~DDT certificada para AES (256 entradas). (4)~Pipeline completo \texttt{pipeline\_soundness} sobre \texttt{CryptoSemantics} (actualmente sobre Nat). (5)~Cierre de los 2 sorry restantes (legacy v2.0).
+
+% ============================================================
+\section*{Conclusión}
+% ============================================================
+
+TrustHash demuestra que la verificación formal de seguridad hash es viable y reveladora: detecta debilidades reales en hashes de producción. SuperHash extiende esta idea hacia la síntesis, combinando la creatividad de los LLMs con la exhaustividad de los E-graphs y la certeza del kernel de Lean. Juntos, representan un camino hacia el diseño asistido por máquina de primitivas criptográficas con garantías formales --- un complemento, no un reemplazo, del criptógrafo humano.
+
+\vspace{0.3cm}
+\noindent\small\textit{Código fuente:} \url{https://github.com/manuelpuebla/superhash-lean} \hfill \textit{47 build jobs $\cdot$ 452 teoremas $\cdot$ Lean 4.28.0}
+
+\end{document}

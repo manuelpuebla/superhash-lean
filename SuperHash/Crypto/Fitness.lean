@@ -1,12 +1,19 @@
 import SuperHash.Crypto.DDT
 import SuperHash.Crypto.AlgebraicDegree
 import SuperHash.Crypto.CryptoRule
+import SuperHash.Crypto.ExtractorBound
 
 /-!
 # SuperHash.Crypto.Fitness — TrustHash-style fitness function
 
-v2.5 Phase 6: Composes all crypto metrics into a unified fitness function.
-This is the evaluator that the E-graph uses to compare designs.
+v2.5 Phase 6 + v2.6 LHL integration: Composes all crypto metrics into
+a unified fitness function backed by information-theoretic bounds.
+
+## v2.6 upgrade (Tyagi-Watanabe Theorem 1)
+The differential security bound `activeSboxes * (n - log2(δ))` is now
+formally justified by the Leftover Hash Lemma: it equals the source
+entropy of the DDT-induced distribution, from which at most k - 2s
+bits can be extracted with s bits of security. See ExtractorBound.lean.
 
 ## Fitness Function (D19)
   securityLevel = min(genericFloor, differentialBound, algebraicBound)
