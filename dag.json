@@ -1,0 +1,594 @@
+{
+  "version": "v2.0.0",
+  "project": "SuperHash v2.0",
+  "phases": [
+    {
+      "id": "v1.0",
+      "name": "v1.0 Complete",
+      "status": "done",
+      "nodes": [],
+      "blocks": [],
+      "summary": "24 nodes, 323+ theorems, 0 sorry, 0 axioms"
+    },
+    {
+      "id": "fase1",
+      "name": "Fase 1: CryptoOp Block Constructors + Bridge Theorems",
+      "status": "done",
+      "nodes": [
+        {
+          "id": "N1.0",
+          "name": "Sorry Closure",
+          "type": "FUNDACIONAL",
+          "files": [
+            "SuperHash/EGraph/Consistency.lean"
+          ],
+          "deps": [],
+          "status": "completed",
+          "difficulty": "MUY_ALTA",
+          "de_risk": true
+        },
+        {
+          "id": "N1.1",
+          "name": "CryptoOp Block Extension",
+          "type": "FUNDACIONAL",
+          "files": [
+            "SuperHash/CryptoOp.lean"
+          ],
+          "deps": [
+            "N1.0"
+          ],
+          "status": "completed",
+          "difficulty": "BAJA"
+        },
+        {
+          "id": "N1.2",
+          "name": "Block NodeOps + Semantics",
+          "type": "FUNDACIONAL",
+          "files": [
+            "SuperHash/CryptoNodeOps.lean"
+          ],
+          "deps": [
+            "N1.1"
+          ],
+          "status": "completed",
+          "difficulty": "MEDIA"
+        },
+        {
+          "id": "N1.3",
+          "name": "Block Bridge Theorems",
+          "type": "CRITICO",
+          "files": [
+            "SuperHash/Rules/BlockBridge.lean"
+          ],
+          "deps": [
+            "N1.1",
+            "N1.2"
+          ],
+          "status": "completed",
+          "difficulty": "MEDIA"
+        },
+        {
+          "id": "N1.4",
+          "name": "CryptoExpr Extension + Extract Update",
+          "type": "CRITICO",
+          "files": [
+            "SuperHash/Pipeline/Extract.lean",
+            "SuperHash/Pipeline/Instances.lean"
+          ],
+          "deps": [
+            "N1.1",
+            "N1.2"
+          ],
+          "status": "completed",
+          "difficulty": "MEDIA"
+        },
+        {
+          "id": "N1.5",
+          "name": "Pipeline Re-verification",
+          "type": "CRITICO",
+          "files": [
+            "SuperHash/Pipeline/Soundness.lean",
+            "SuperHash/Pipeline/Integration.lean",
+            "SuperHash/Pipeline/MasterTheorem.lean"
+          ],
+          "deps": [
+            "N1.2",
+            "N1.3",
+            "N1.4"
+          ],
+          "status": "completed",
+          "difficulty": "MEDIA"
+        },
+        {
+          "id": "N1.6",
+          "name": "Block Instances + Non-vacuity",
+          "type": "HOJA",
+          "files": [
+            "SuperHash/Instances/BlockDesigns.lean",
+            "Tests/NonVacuity/Blocks.lean"
+          ],
+          "deps": [
+            "N1.5"
+          ],
+          "status": "completed"
+        }
+      ],
+      "blocks": [
+        {
+          "id": "B1",
+          "name": "Sorry Closure",
+          "nodes": [
+            "N1.0"
+          ],
+          "status": "completed",
+          "closed_at": "2026-03-13"
+        },
+        {
+          "id": "B2",
+          "name": "CryptoOp Block Extension",
+          "nodes": [
+            "N1.1"
+          ],
+          "status": "completed",
+          "closed_at": "2026-03-13"
+        },
+        {
+          "id": "B3",
+          "name": "Block NodeOps + Semantics",
+          "nodes": [
+            "N1.2"
+          ],
+          "status": "completed",
+          "closed_at": "2026-03-13"
+        },
+        {
+          "id": "B4",
+          "name": "Bridge Theorems + CryptoExpr",
+          "nodes": [
+            "N1.3",
+            "N1.4"
+          ],
+          "status": "completed",
+          "closed_at": "2026-03-13"
+        },
+        {
+          "id": "B5",
+          "name": "Pipeline Re-verification",
+          "nodes": [
+            "N1.5"
+          ],
+          "status": "completed",
+          "closed_at": "2026-03-13"
+        },
+        {
+          "id": "B6",
+          "name": "Block Instances + Non-vacuity",
+          "nodes": [
+            "N1.6"
+          ],
+          "status": "completed",
+          "closed_at": "2026-03-13"
+        }
+      ]
+    },
+    {
+      "id": "fase2",
+      "name": "Fase 2: Rule Discovery Infrastructure",
+      "status": "done",
+      "nodes": [
+        {
+          "id": "N2.1",
+          "name": "RuleCandidate Structure",
+          "type": "FUNDACIONAL",
+          "files": [
+            "SuperHash/Discovery/RuleCandidate.lean"
+          ],
+          "deps": [
+            "N1.6"
+          ],
+          "status": "completed",
+          "difficulty": "BAJA"
+        },
+        {
+          "id": "N2.2",
+          "name": "Rule Verification Framework",
+          "type": "FUNDACIONAL",
+          "files": [
+            "SuperHash/Discovery/RuleVerifier.lean"
+          ],
+          "deps": [
+            "N2.1"
+          ],
+          "status": "completed",
+          "difficulty": "ALTA",
+          "de_risk": true
+        },
+        {
+          "id": "N2.3",
+          "name": "Dynamic Rule Pool + Performance Budget",
+          "type": "CRITICO",
+          "files": [
+            "SuperHash/Discovery/RulePool.lean"
+          ],
+          "deps": [
+            "N2.1",
+            "N2.2"
+          ],
+          "status": "completed",
+          "difficulty": "ALTA"
+        },
+        {
+          "id": "N2.4",
+          "name": "AXLE Integration Layer",
+          "type": "PARALELO",
+          "files": [
+            "scripts/axle_integration.py"
+          ],
+          "deps": [
+            "N2.2"
+          ],
+          "status": "completed"
+        },
+        {
+          "id": "N2.5",
+          "name": "RLVF Reward Model",
+          "type": "CRITICO",
+          "files": [
+            "scripts/rlvf_reward.py"
+          ],
+          "deps": [
+            "N2.2",
+            "N2.4"
+          ],
+          "status": "completed"
+        },
+        {
+          "id": "N2.6",
+          "name": "LLM Rule Proposal Engine + TCB Validation",
+          "type": "PARALELO",
+          "files": [
+            "scripts/rule_proposer.py"
+          ],
+          "deps": [
+            "N2.1"
+          ],
+          "status": "completed"
+        },
+        {
+          "id": "N2.7",
+          "name": "Three-Layer Proving Pipeline",
+          "type": "PARALELO",
+          "files": [
+            "scripts/proving_pipeline.py"
+          ],
+          "deps": [
+            "N2.4"
+          ],
+          "status": "completed"
+        },
+        {
+          "id": "N2.8",
+          "name": "Rule Discovery Integration Test",
+          "type": "HOJA",
+          "files": [
+            "scripts/test_discovery.py",
+            "Tests/Discovery.lean"
+          ],
+          "deps": [
+            "N2.3",
+            "N2.5",
+            "N2.6",
+            "N2.7"
+          ],
+          "status": "completed"
+        }
+      ],
+      "blocks": [
+        {
+          "id": "B7",
+          "name": "RuleCandidate Structure",
+          "nodes": [
+            "N2.1"
+          ],
+          "status": "completed",
+          "closed_at": "2026-03-13"
+        },
+        {
+          "id": "B8",
+          "name": "Rule Verification Framework",
+          "nodes": [
+            "N2.2"
+          ],
+          "status": "completed",
+          "closed_at": "2026-03-13"
+        },
+        {
+          "id": "B9",
+          "name": "Dynamic Rule Pool",
+          "nodes": [
+            "N2.3"
+          ],
+          "status": "completed",
+          "closed_at": "2026-03-13"
+        },
+        {
+          "id": "B10",
+          "name": "AXLE + LLM Proposal",
+          "nodes": [
+            "N2.4",
+            "N2.6"
+          ],
+          "status": "completed",
+          "closed_at": "2026-03-13"
+        },
+        {
+          "id": "B11",
+          "name": "RLVF + Three-Layer Proving",
+          "nodes": [
+            "N2.5",
+            "N2.7"
+          ],
+          "status": "completed",
+          "closed_at": "2026-03-13"
+        },
+        {
+          "id": "B12",
+          "name": "Rule Discovery Integration",
+          "nodes": [
+            "N2.8"
+          ],
+          "status": "completed",
+          "closed_at": "2026-03-13"
+        }
+      ]
+    },
+    {
+      "id": "fase3",
+      "name": "Fase 3: Autonomous Loop + BitVec + SmoothE",
+      "status": "done",
+      "nodes": [
+        {
+          "id": "N3.1",
+          "name": "BitVec Semantics + Property Testing",
+          "type": "FUNDACIONAL",
+          "files": [
+            "SuperHash/Concrete/BitVecOps.lean",
+            "scripts/bitvec_property_test.py"
+          ],
+          "deps": [
+            "N1.6"
+          ],
+          "status": "completed",
+          "difficulty": "BAJA"
+        },
+        {
+          "id": "N3.2",
+          "name": "Abstract-Concrete Bridge",
+          "type": "FUNDACIONAL",
+          "files": [
+            "SuperHash/Concrete/Bridge.lean"
+          ],
+          "deps": [
+            "N3.1"
+          ],
+          "status": "completed",
+          "difficulty": "MEDIA",
+          "de_risk": true
+        },
+        {
+          "id": "N3.3",
+          "name": "Concrete S-box Verification",
+          "type": "CRITICO",
+          "files": [
+            "SuperHash/Concrete/SboxVerify.lean"
+          ],
+          "deps": [
+            "N3.1",
+            "N3.2"
+          ],
+          "status": "completed",
+          "difficulty": "MEDIA"
+        },
+        {
+          "id": "N3.4",
+          "name": "Non-Linear Cost Model",
+          "type": "CRITICO",
+          "files": [
+            "SuperHash/SmoothE/CostModel.lean"
+          ],
+          "deps": [
+            "N1.6"
+          ],
+          "status": "completed",
+          "difficulty": "MEDIA"
+        },
+        {
+          "id": "N3.5",
+          "name": "SmoothE Extraction Interface",
+          "type": "CRITICO",
+          "files": [
+            "SuperHash/SmoothE/Extract.lean"
+          ],
+          "deps": [
+            "N3.4"
+          ],
+          "status": "completed",
+          "difficulty": "ALTA"
+        },
+        {
+          "id": "N3.6",
+          "name": "Upgraded Pareto Extraction",
+          "type": "CRITICO",
+          "files": [
+            "SuperHash/Pareto/ExtractV2.lean"
+          ],
+          "deps": [
+            "N3.5"
+          ],
+          "status": "completed",
+          "difficulty": "ALTA"
+        },
+        {
+          "id": "N3.7",
+          "name": "Design Loop Core + Termination",
+          "type": "CRITICO",
+          "files": [
+            "SuperHash/DesignLoop/Core.lean"
+          ],
+          "deps": [
+            "N2.3",
+            "N3.6"
+          ],
+          "status": "completed",
+          "difficulty": "MEDIA"
+        },
+        {
+          "id": "N3.8",
+          "name": "Design Loop Soundness",
+          "type": "CRITICO",
+          "files": [
+            "SuperHash/DesignLoop/Soundness.lean"
+          ],
+          "deps": [
+            "N3.7"
+          ],
+          "status": "completed",
+          "difficulty": "MEDIA"
+        },
+        {
+          "id": "N3.9",
+          "name": "Loop Orchestrator (Python)",
+          "type": "PARALELO",
+          "files": [
+            "scripts/design_loop.py"
+          ],
+          "deps": [
+            "N2.6",
+            "N2.7",
+            "N3.7"
+          ],
+          "status": "completed"
+        },
+        {
+          "id": "N3.10",
+          "name": "Master Theorem v2.0",
+          "type": "CRITICO",
+          "files": [
+            "SuperHash/Pipeline/MasterTheoremV2.lean"
+          ],
+          "deps": [
+            "N3.8",
+            "N3.6"
+          ],
+          "status": "completed",
+          "difficulty": "MUY_ALTA"
+        },
+        {
+          "id": "N3.11",
+          "name": "E2E Demo + Non-vacuity",
+          "type": "HOJA",
+          "files": [
+            "SuperHash/Instances/DesignLoopDemo.lean",
+            "Tests/NonVacuity/DesignLoop.lean"
+          ],
+          "deps": [
+            "N3.10"
+          ],
+          "status": "completed"
+        }
+      ],
+      "blocks": [
+        {
+          "id": "B13",
+          "name": "BitVec Semantics",
+          "nodes": [
+            "N3.1"
+          ],
+          "status": "completed",
+          "closed_at": "2026-03-13"
+        },
+        {
+          "id": "B14",
+          "name": "Abstract-Concrete Bridge",
+          "nodes": [
+            "N3.2"
+          ],
+          "status": "completed",
+          "closed_at": "2026-03-13"
+        },
+        {
+          "id": "B15",
+          "name": "S-box Verify + Non-Linear Cost",
+          "nodes": [
+            "N3.3",
+            "N3.4"
+          ],
+          "status": "completed",
+          "closed_at": "2026-03-13"
+        },
+        {
+          "id": "B16",
+          "name": "SmoothE Interface",
+          "nodes": [
+            "N3.5"
+          ],
+          "status": "completed",
+          "closed_at": "2026-03-13"
+        },
+        {
+          "id": "B17",
+          "name": "Upgraded Pareto",
+          "nodes": [
+            "N3.6"
+          ],
+          "status": "completed",
+          "closed_at": "2026-03-13"
+        },
+        {
+          "id": "B18",
+          "name": "Design Loop Core",
+          "nodes": [
+            "N3.7"
+          ],
+          "status": "completed",
+          "closed_at": "2026-03-13"
+        },
+        {
+          "id": "B19",
+          "name": "Soundness + Orchestrator",
+          "nodes": [
+            "N3.8",
+            "N3.9"
+          ],
+          "status": "completed",
+          "closed_at": "2026-03-13"
+        },
+        {
+          "id": "B20",
+          "name": "Master Theorem v2.0",
+          "nodes": [
+            "N3.10"
+          ],
+          "status": "completed",
+          "closed_at": "2026-03-13"
+        },
+        {
+          "id": "B21",
+          "name": "E2E Demo + Non-vacuity",
+          "nodes": [
+            "N3.11"
+          ],
+          "status": "completed",
+          "closed_at": "2026-03-13"
+        }
+      ]
+    }
+  ],
+  "meta": {
+    "updated": "2026-03-13T22:00:00Z",
+    "version": "v2.0",
+    "completed_nodes": 26,
+    "total_nodes": 28,
+    "total_blocks": 21
+  }
+}

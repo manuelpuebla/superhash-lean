@@ -1,0 +1,16 @@
+name = "superhash"
+version = "0.1.0"
+keywords = ["hash", "e-graph", "verification", "crypto"]
+defaultTargets = ["SuperHash"]
+
+[leanOptions]
+pp.unicode.fun = true
+relaxedAutoImplicit = false
+
+[[lean_lib]]
+name = "SuperHash"
+
+[[lean_lib]]
+name = "Tests"
+globs = ["Tests"]
+deps = ["SuperHash"]

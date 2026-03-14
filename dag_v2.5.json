@@ -1,0 +1,112 @@
+{
+  "version": "v2.5.0",
+  "project": "SuperHash v2.5",
+  "phases": [
+    {
+      "id": "fase1", "name": "Fase 1: Crypto Foundations (Copy LeanHash)", "status": "pending",
+      "nodes": [
+        {"id": "N1.1", "name": "SboxParams + Properties", "type": "FUNDACIONAL", "files": ["SuperHash/Crypto/SboxProperties.lean"], "deps": [], "status": "pending", "difficulty": "BAJA", "source": "LeanHash/SboxProperties.lean"},
+        {"id": "N1.2", "name": "MDS + Branch Number", "type": "FUNDACIONAL", "files": ["SuperHash/Crypto/MDSProperties.lean"], "deps": ["N1.1"], "status": "pending", "difficulty": "BAJA", "source": "LeanHash/MDSMatrix.lean"},
+        {"id": "N1.3", "name": "Security Definitions + Birthday/GBP/Joux", "type": "FUNDACIONAL", "files": ["SuperHash/Crypto/SecurityDefs.lean"], "deps": ["N1.1"], "status": "pending", "difficulty": "BAJA", "source": "LeanHash/SecurityDefs+Birthday+GBP+Joux"},
+        {"id": "N1.4", "name": "SPNDegree + IdealDegree", "type": "PARALELO", "files": ["SuperHash/Crypto/SPNDegree.lean", "SuperHash/Crypto/IdealDegree.lean"], "deps": ["N1.1"], "status": "pending", "difficulty": "BAJA", "source": "LeanHash/SPNDegree+IdealDegree"},
+        {"id": "N1.5", "name": "Concrete Instances", "type": "HOJA", "files": ["SuperHash/Crypto/Instances.lean"], "deps": ["N1.1", "N1.2", "N1.3", "N1.4"], "status": "pending"}
+      ],
+      "blocks": [
+        {"id": "B1", "name": "LeanHash Foundations (copy)", "nodes": ["N1.1", "N1.2", "N1.3"], "status": "pending"},
+        {"id": "B2", "name": "SPNDegree + IdealDegree", "nodes": ["N1.4"], "status": "pending"},
+        {"id": "B3", "name": "Concrete Instances", "nodes": ["N1.5"], "status": "pending"}
+      ]
+    },
+    {
+      "id": "fase2", "name": "Fase 2: S-box Certification + BitVec", "status": "pending",
+      "nodes": [
+        {"id": "N2.1", "name": "DDT Computation", "type": "FUNDACIONAL", "files": ["SuperHash/Crypto/DDT.lean"], "deps": ["N1.1"], "status": "pending", "difficulty": "MEDIA", "de_risk": true, "source": "TrustHash/Sbox/AutoSboxPipeline pattern"},
+        {"id": "N2.2", "name": "SboxCertifiedParams", "type": "CRITICO", "files": ["SuperHash/Crypto/SboxCertified.lean"], "deps": ["N2.1", "N1.1"], "status": "pending", "difficulty": "MEDIA", "source": "TrustHash/Sbox/SboxCertifiedParams"},
+        {"id": "N2.3", "name": "AutoSboxPipeline", "type": "CRITICO", "files": ["SuperHash/Crypto/AutoSbox.lean"], "deps": ["N2.1", "N2.2"], "status": "pending", "difficulty": "MEDIA", "source": "TrustHash/Sbox/AutoSboxPipeline"},
+        {"id": "N2.4", "name": "Certified Instances", "type": "HOJA", "files": ["SuperHash/Crypto/CertInstances.lean"], "deps": ["N2.3"], "status": "pending"}
+      ],
+      "blocks": [
+        {"id": "B4", "name": "DDT Computation (DE-RISK)", "nodes": ["N2.1"], "status": "pending"},
+        {"id": "B5", "name": "SboxCertifiedParams", "nodes": ["N2.2"], "status": "pending"},
+        {"id": "B6", "name": "AutoSbox + Instances", "nodes": ["N2.3", "N2.4"], "status": "pending"}
+      ]
+    },
+    {
+      "id": "fase3", "name": "Fase 3: CryptoSemantics (Core Gap)", "status": "pending",
+      "nodes": [
+        {"id": "N3.1", "name": "CryptoSemantics Structure", "type": "FUNDACIONAL", "files": ["SuperHash/Crypto/Semantics.lean"], "deps": ["N1.3", "N2.2"], "status": "pending", "difficulty": "MEDIA", "de_risk": true},
+        {"id": "N3.2", "name": "evalCryptoSem", "type": "FUNDACIONAL", "files": ["SuperHash/Crypto/CryptoEval.lean"], "deps": ["N3.1"], "status": "pending", "difficulty": "MEDIA"},
+        {"id": "N3.3", "name": "NodeSemantics Instance", "type": "CRITICO", "files": ["SuperHash/Crypto/NodeSemInstance.lean"], "deps": ["N3.2"], "status": "pending", "difficulty": "MEDIA"},
+        {"id": "N3.4", "name": "NatBridge (Backward Compat)", "type": "CRITICO", "files": ["SuperHash/Crypto/NatBridge.lean"], "deps": ["N3.2"], "status": "pending", "difficulty": "MEDIA"},
+        {"id": "N3.5", "name": "ConsistentCryptoValuation", "type": "CRITICO", "files": ["SuperHash/Crypto/CryptoConsistency.lean"], "deps": ["N3.3"], "status": "pending", "difficulty": "ALTA"},
+        {"id": "N3.6", "name": "Smoke Tests + Non-vacuity", "type": "HOJA", "files": ["SuperHash/Crypto/SemTests.lean", "Tests/NonVacuity/CryptoSem.lean"], "deps": ["N3.5"], "status": "pending"}
+      ],
+      "blocks": [
+        {"id": "B7", "name": "CryptoSemantics Structure (DE-RISK)", "nodes": ["N3.1"], "status": "pending"},
+        {"id": "B8", "name": "evalCryptoSem", "nodes": ["N3.2"], "status": "pending"},
+        {"id": "B9", "name": "NodeSem + NatBridge", "nodes": ["N3.3", "N3.4"], "status": "pending"},
+        {"id": "B10", "name": "ConsistentCryptoValuation", "nodes": ["N3.5"], "status": "pending"},
+        {"id": "B11", "name": "Smoke Tests", "nodes": ["N3.6"], "status": "pending"}
+      ]
+    },
+    {
+      "id": "fase4", "name": "Fase 4: Crypto Rewrite Rules", "status": "pending",
+      "nodes": [
+        {"id": "N4.1", "name": "CryptoSoundRule Framework", "type": "FUNDACIONAL", "files": ["SuperHash/Crypto/CryptoRule.lean"], "deps": ["N3.3"], "status": "pending", "difficulty": "MEDIA", "source": "TrustHash/HashSoundRules pattern"},
+        {"id": "N4.2", "name": "SboxSubstitute Rule", "type": "CRITICO", "files": ["SuperHash/Crypto/Rules/SboxSubstitute.lean"], "deps": ["N4.1", "N1.1"], "status": "pending", "difficulty": "MEDIA"},
+        {"id": "N4.3", "name": "RoundReduce Rule", "type": "CRITICO", "files": ["SuperHash/Crypto/Rules/RoundReduce.lean"], "deps": ["N4.1", "N1.2"], "status": "pending", "difficulty": "MEDIA"},
+        {"id": "N4.4", "name": "WideTrailImprove Rule", "type": "CRITICO", "files": ["SuperHash/Crypto/Rules/WideTrailImprove.lean"], "deps": ["N4.1", "N1.2"], "status": "pending", "difficulty": "MEDIA"},
+        {"id": "N4.5", "name": "SboxCompose Rule", "type": "CRITICO", "files": ["SuperHash/Crypto/Rules/SboxCompose.lean"], "deps": ["N4.1"], "status": "pending", "difficulty": "BAJA", "source": "TrustHash sboxCompose_sound"},
+        {"id": "N4.6", "name": "RoundsCompose Rule", "type": "CRITICO", "files": ["SuperHash/Crypto/Rules/RoundsCompose.lean"], "deps": ["N4.1"], "status": "pending", "difficulty": "BAJA", "source": "TrustHash roundsCompose pattern"},
+        {"id": "N4.7", "name": "Rule Non-vacuity", "type": "HOJA", "files": ["Tests/NonVacuity/CryptoRules.lean"], "deps": ["N4.2", "N4.3", "N4.4", "N4.5", "N4.6"], "status": "pending"}
+      ],
+      "blocks": [
+        {"id": "B12", "name": "CryptoSoundRule Framework", "nodes": ["N4.1"], "status": "pending"},
+        {"id": "B13", "name": "Security Rules (parallel)", "nodes": ["N4.2", "N4.3", "N4.4"], "status": "pending"},
+        {"id": "B14", "name": "Composition Rules", "nodes": ["N4.5", "N4.6"], "status": "pending"},
+        {"id": "B15", "name": "Rule Non-vacuity", "nodes": ["N4.7"], "status": "pending"}
+      ]
+    },
+    {
+      "id": "fase5", "name": "Fase 5: Algebraic Degree (Crown Jewel)", "status": "pending",
+      "nodes": [
+        {"id": "N5.1", "name": "ANF + IsPermutation", "type": "FUNDACIONAL", "files": ["SuperHash/Crypto/ANF.lean"], "deps": ["N1.4"], "status": "pending", "difficulty": "ALTA", "de_risk": true},
+        {"id": "N5.2", "name": "Degree Properties", "type": "FUNDACIONAL", "files": ["SuperHash/Crypto/AlgebraicDegree.lean"], "deps": ["N5.1"], "status": "pending", "difficulty": "MEDIA"},
+        {"id": "N5.3", "name": "Boura-Canteaut Bound", "type": "CRITICO", "files": ["SuperHash/Crypto/DegreeComposition.lean"], "deps": ["N5.2"], "status": "pending", "difficulty": "MUY_ALTA", "de_risk": true},
+        {"id": "N5.4", "name": "Degree-Round Security", "type": "CRITICO", "files": ["SuperHash/Crypto/DegreeSecurity.lean"], "deps": ["N5.3", "N3.2"], "status": "pending", "difficulty": "MEDIA"},
+        {"id": "N5.5", "name": "AES Degree Verification", "type": "HOJA", "files": ["Tests/NonVacuity/AlgebraicDegree.lean"], "deps": ["N5.4"], "status": "pending"}
+      ],
+      "blocks": [
+        {"id": "B16", "name": "ANF + IsPermutation (DE-RISK)", "nodes": ["N5.1"], "status": "pending"},
+        {"id": "B17", "name": "Degree Properties", "nodes": ["N5.2"], "status": "pending"},
+        {"id": "B18", "name": "Boura-Canteaut (MUY_ALTA)", "nodes": ["N5.3"], "status": "pending"},
+        {"id": "B19", "name": "Degree Security + AES", "nodes": ["N5.4", "N5.5"], "status": "pending"}
+      ]
+    },
+    {
+      "id": "fase6", "name": "Fase 6: Pipeline + Fitness Integration", "status": "pending",
+      "nodes": [
+        {"id": "N6.1", "name": "Fitness Function (formal bounds)", "type": "FUNDACIONAL", "files": ["SuperHash/Crypto/Fitness.lean"], "deps": ["N1.3"], "status": "pending", "difficulty": "BAJA"},
+        {"id": "N6.2", "name": "Crypto Saturation", "type": "CRITICO", "files": ["SuperHash/Pipeline/CryptoSaturate.lean"], "deps": ["N4.7", "N3.5"], "status": "pending", "difficulty": "MEDIA", "source": "TrustHash/EGraph/RealSaturate pattern"},
+        {"id": "N6.3", "name": "Crypto Extraction", "type": "CRITICO", "files": ["SuperHash/Pipeline/CryptoExtract.lean"], "deps": ["N6.2", "N5.4"], "status": "pending", "difficulty": "MEDIA"},
+        {"id": "N6.4", "name": "Pipeline v2.5 Composition", "type": "CRITICO", "files": ["SuperHash/Pipeline/PipelineV25.lean"], "deps": ["N6.2", "N6.3", "N6.1"], "status": "pending", "difficulty": "MEDIA"},
+        {"id": "N6.5", "name": "Master Theorem v2.5", "type": "CRITICO", "files": ["SuperHash/Pipeline/MasterTheoremV25.lean"], "deps": ["N6.4"], "status": "pending", "difficulty": "ALTA"},
+        {"id": "N6.6", "name": "E2E Demo + Non-vacuity", "type": "HOJA", "files": ["SuperHash/Instances/CryptoDemo.lean", "Tests/NonVacuity/PipelineV25.lean"], "deps": ["N6.5"], "status": "pending"}
+      ],
+      "blocks": [
+        {"id": "B20", "name": "Fitness Function", "nodes": ["N6.1"], "status": "pending"},
+        {"id": "B21", "name": "Crypto Saturation", "nodes": ["N6.2"], "status": "pending"},
+        {"id": "B22", "name": "Crypto Extraction", "nodes": ["N6.3"], "status": "pending"},
+        {"id": "B23", "name": "Pipeline + Master Theorem", "nodes": ["N6.4", "N6.5"], "status": "pending"},
+        {"id": "B24", "name": "E2E Demo", "nodes": ["N6.6"], "status": "pending"}
+      ]
+    }
+  ],
+  "meta": {
+    "updated": "2026-03-13T23:00:00Z",
+    "version": "v2.5",
+    "completed_nodes": 0,
+    "total_nodes": 30,
+    "total_blocks": 24
+  }
+}
