@@ -55,3 +55,5 @@ import SuperHash.Crypto.HigherOrderDiff
 import SuperHash.Crypto.LinearLayerDegree
 import SuperHash.Pipeline.CompletenessSpec
 import SuperHash.Bridge.TrustHashFitness
+import SuperHash.TrustHash.NiceTree
+import SuperHash.TrustHash.Verdict

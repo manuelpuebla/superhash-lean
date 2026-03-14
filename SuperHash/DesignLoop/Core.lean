@@ -1,6 +1,7 @@
 import SuperHash.Discovery.RulePool
 import SuperHash.SmoothE.Extract
 import SuperHash.Instances.Evaluation
+import SuperHash.Rules.CryptoRules
 
 /-!
 # SuperHash.DesignLoop.Core — Autonomous design loop (N3.7)
@@ -66,8 +67,9 @@ def designLoopStep (state : DesignLoopState) : DesignLoopState :=
   match state.fuel with
   | 0 => state  -- no fuel: return unchanged
   | fuel + 1 =>
-    -- Saturate with current rules (dummy rule list for now)
-    let satRules : List (RewriteRule CryptoOp) := []  -- rules added via pool
+    -- Saturate with verified crypto rewrite rules (v2.9: ACTIVE, not empty!)
+    let satRules : List (RewriteRule CryptoOp) :=
+      cryptoPatternRules.map (·.rule)
     let g_sat := saturateF 10 5 3 state.graph satRules
     -- Extract new Pareto front
     let newPareto := extractParetoV2 g_sat standardCostSuite 20 state.rootId
