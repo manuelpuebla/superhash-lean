@@ -1,8 +1,12 @@
 ═══ Specification Audit: superhash_lean ═══
-Theorems: 324  Lemmas: 0  Pipeline: 33
-Clean: 241  T1(vacuity): 0  T1.5(identity): 0  T2(weak): 3  T3(structural): 3  T4(no-witness): 77
+Theorems: 528  Lemmas: 0  Pipeline: 31
+Clean: 442  T1(vacuity): 0  T1.5(identity): 0  T2(weak): 4  T3(structural): 3  T4(no-witness): 79
 
-── TIER 2 — WEAK SPECS (3 issues) ──
+── TIER 2 — WEAK SPECS (4 issues) ──
+  theorem evalOp_ext_cs
+    SuperHash/Crypto/CryptoNodeSemantics.lean:154
+    ⚠ T2-UNUSED-PARTIAL: 1/3 params are _-prefixed: ['_env']
+
   theorem round_reduce_safe
     SuperHash/Crypto/CryptoRule.lean:137
     ⚠ T2-UNUSED-PARTIAL: 1/3 params are _-prefixed: ['_hr']
@@ -28,7 +32,7 @@ Clean: 241  T1(vacuity): 0  T1.5(identity): 0  T2(weak): 3  T3(structural): 3  T
     SuperHash/Rules/SoundRule.lean:87
     ⚠ T3-NAME-MISMATCH: name contains 'sound' but conclusion has no equality, biconditional, or implication
 
-── TIER 4 — NO WITNESS (77 issues) ──
+── TIER 4 — NO WITNESS (79 issues) ──
   theorem add_node_triple
     SuperHash/EGraph/AddNodeTriple.lean:17
     ⚠ T4-NO-WITNESS: 5 Prop hypotheses but no non-vacuity example found in Tests/NonVacuity*.lean or same file
@@ -74,15 +78,15 @@ Clean: 241  T1(vacuity): 0  T1.5(identity): 0  T2(weak): 3  T3(structural): 3  T
     ⚠ T4-NO-WITNESS: 6 Prop hypotheses but no non-vacuity example found in Tests/NonVacuity*.lean or same file
 
   theorem processClass_shi_combined
-    SuperHash/EGraph/Consistency.lean:1178
+    SuperHash/EGraph/Consistency.lean:1188
     ⚠ T4-NO-WITNESS: 3 Prop hypotheses but no non-vacuity example found in Tests/NonVacuity*.lean or same file
 
   theorem rebuildStep_preserves_triple_aux
-    SuperHash/EGraph/Consistency.lean:1364
+    SuperHash/EGraph/Consistency.lean:1374
     ⚠ T4-NO-WITNESS: 3 Prop hypotheses but no non-vacuity example found in Tests/NonVacuity*.lean or same file
 
   theorem rebuildStepBody_preserves_triple
-    SuperHash/EGraph/Consistency.lean:1401
+    SuperHash/EGraph/Consistency.lean:1411
     ⚠ T4-NO-WITNESS: 3 Prop hypotheses but no non-vacuity example found in Tests/NonVacuity*.lean or same file
 
   theorem IsRootAt_of_rootD_self
@@ -216,6 +220,14 @@ Clean: 241  T1(vacuity): 0  T1.5(identity): 0  T2(weak): 3  T3(structural): 3  T
     SuperHash/Pareto/Soundness.lean:94
     ⚠ T3-MANY-HYPOTHESES: 10 hypotheses on pipeline theorem — verify each is satisfiable and necessary
     ⚠ T4-NO-WITNESS: 4 Prop hypotheses [pipeline, threshold=2] but no non-vacuity example found in Tests/NonVacuity*.lean or same file
+
+  theorem extractF_of_rank
+    SuperHash/Pipeline/CompletenessSpec.lean:365
+    ⚠ T4-NO-WITNESS: 4 Prop hypotheses but no non-vacuity example found in Tests/NonVacuity*.lean or same file
+
+  theorem extractAuto_complete
+    SuperHash/Pipeline/CompletenessSpec.lean:410
+    ⚠ T4-NO-WITNESS: 5 Prop hypotheses but no non-vacuity example found in Tests/NonVacuity*.lean or same file
 
   theorem zip_lookup_nodup
     SuperHash/Pipeline/EMatchSpec.lean:175

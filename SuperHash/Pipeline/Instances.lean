@@ -167,4 +167,24 @@ def cryptoCostFn (node : ENode CryptoOp) : Nat :=
 #eval reconstructCrypto (.const 42) [] |>.isSome                    -- true
 #eval reconstructCrypto (.sbox 7 0) [] |>.isSome                    -- false
 
+/-- v2.9.1 Fix 5: reconstructCrypto succeeds for all 12 CryptoOp constructors
+    when the children list has the correct length (matching CryptoOp.children).
+    This proves the hrecon hypothesis of extractAuto_complete. -/
+theorem reconstructCrypto_total (op : CryptoOp) (children : List CryptoExpr)
+    (h : children.length = (CryptoOp.children op).length) :
+    (reconstructCrypto op children).isSome = true := by
+  match op, children, h with
+  | .sbox _ _, [_], _ => rfl
+  | .linear _ _, [_], _ => rfl
+  | .xor _ _, [_, _], _ => rfl
+  | .round _ _ _, [_], _ => rfl
+  | .compose _ _, [_, _], _ => rfl
+  | .parallel _ _, [_, _], _ => rfl
+  | .iterate _ _, [_], _ => rfl
+  | .const _, [], _ => rfl
+  | .spnBlock _ _ _, [_, _], _ => rfl
+  | .feistelBlock _ _, [_], _ => rfl
+  | .spongeBlock _ _ _, [_], _ => rfl
+  | .arxBlock _ _ _ _, [_, _, _], _ => rfl
+
 end SuperHash

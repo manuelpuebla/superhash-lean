@@ -1,15 +1,16 @@
-# SuperHash v2.6
+# SuperHash v3.0
 
-**Diseño automático de funciones hash criptográficas con garantías formales: E-graphs + semántica criptográfica verificada + fundamentos information-theoretic.**
+**Diseño automático de funciones hash criptográficas con garantías formales: E-graphs + semántica criptográfica verificada + exploración bidireccional + fundamentos information-theoretic.**
 
 ## Qué es
 
 SuperHash formaliza en Lean 4 un framework para el diseño automático de funciones hash criptográficas. A diferencia de herramientas que solo *analizan* hashes, SuperHash *sintetiza* diseños óptimos explorando exhaustivamente el espacio de diseños equivalentes mediante equality saturation sobre E-graphs.
 
-El sistema opera en tres niveles:
+El sistema opera en cuatro niveles:
 1. **E-graph engine** (v1.0): motor verificado de saturation + extraction + Pareto
 2. **CryptoSemantics** (v2.5): evaluación con métricas criptográficas reales (grado algebraico, δ, branch number, S-boxes activas)
 3. **Information-theoretic bounds** (v2.6): cotas de seguridad respaldadas por el Leftover Hash Lemma y análisis de side-information ZK
+4. **Bidirectional exploration** (v3.0): 15 reglas de reescritura (simplificación + expansión + bridges) con exploración bidireccional del espacio de diseños
 
 ## Qué resuelve
 
@@ -25,12 +26,14 @@ Cada componente respaldado por un teorema verificado en Lean 4.
 
 | Métrica | Valor |
 |---------|-------|
-| Build jobs | 51 |
-| Archivos Lean | ~50 |
-| LOC | ~13,500 |
-| Teoremas + examples | ~490 |
-| Sorry | 2 (v2.0 legacy, no en código crypto) |
+| Build jobs | 62 |
+| Archivos Lean | 62 |
+| LOC | ~17,500 |
+| Teoremas + examples | ~720 |
+| Sorry | 0 |
 | Axiomas custom | 0 (solo `propext` + `Quot.sound`) |
+| Rewrite rules | 15 (5 simplification + 10 expansion) |
+| CryptoSemantics-proven rules | 3 (iterateOne, composeAssoc, iterateCompose) |
 | Scripts Python | 6 |
 | Lean | 4.28.0, sin Mathlib |
 
@@ -54,8 +57,10 @@ SuperHash/
 │   ├── EMatch.lean, AddNodeTriple.lean, Tests.lean
 ├── Rules/                      -- Reglas de reescritura verificadas
 │   ├── SoundRule.lean          -- EquivalenceRule + ImprovementRule
-│   ├── CryptoRules.lean        -- 10 reglas concretas
+│   ├── CryptoRules.lean        -- 10 reglas concretas (Nat)
+│   ├── CryptoRulesCS.lean      -- 3 reglas CryptoSemantics (0 sorry)
 │   ├── BlockBridge.lean        -- 4 bridges (spnBlock ↔ iterate∘compose)
+│   ├── ExpansionRules.lean     -- 10 expansion rules (reverse bridges + roundSplit)
 │   └── NonVacuity.lean
 ├── Pipeline/                   -- Pipeline de saturación y extracción
 │   ├── Saturate.lean, Extract.lean, Soundness.lean
@@ -71,10 +76,20 @@ SuperHash/
 │   ├── SourceEntropy.lean      -- DDT δ → source entropy k (LHL)
 │   ├── ExtractorBound.lean     -- extractableBits = k - 2s
 │   ├── UHFConstraint.lean      -- 2-UHF: δ·2^l ≤ 2^n (decidable)
-│   └── ZKSideInfo.lean         -- zkSecurity = base - transcript
+│   ├── ZKSideInfo.lean         -- zkSecurity = base - transcript
+│   ├── AESSbox.lean            -- Full 256-entry AES S-box (δ=4, native_decide)
+│   ├── CryptoNodeSemantics.lean -- NodeSemantics CryptoOp CryptoSemantics instance
+│   ├── BouraCanteutBound.lean  -- 58 thms: BCD11, BC13, iterated bounds
+│   ├── HigherOrderDiff.lean    -- 44 thms: derivative vanishing, zero-sum
+│   └── LinearLayerDegree.lean  -- 67 thms: SPN phase analysis, R_exp transition
 ├── Pareto/                     -- Extracción multi-objetivo
 ├── Discovery/                  -- RuleCandidate, RulePool (LLM integration)
 ├── DesignLoop/                 -- Loop autónomo fuel-bounded
+├── TrustHash/                  -- TrustHash-style verification
+│   ├── NiceTree.lean           -- Nice tree decomposition + DP
+│   └── Verdict.lean            -- Security verdict (min of 5 metrics)
+├── Bridge/                     -- Inter-system bridges
+│   └── TrustHashFitness.lean   -- CryptoSemantics → HashSpec bridge
 ├── Concrete/                   -- BitVec ops + bridge
 ├── SmoothE/                    -- Non-linear cost model
 └── Instances/                  -- Diseños concretos + demos
@@ -104,6 +119,17 @@ theorem pipeline_soundness :
 - **2-UHF constraint**: `δ · 2^l ≤ 2^n` — decidable check por `native_decide`
 - **ZK side-info loss**: `zkSecurity = baseSecurity - transcriptBits`
 
+### v3.0: Bidirectional design exploration
+15 rewrite rules enable genuine design space exploration:
+- **5 simplification** (Nat): iterateOne, parallelIdentity, composeAssoc, roundCompose, iterateCompose
+- **3 CryptoSemantics-proven**: iterateOne_cs, composeAssoc_cs (`Nat.mul_assoc + max_assoc + min_assoc + add_assoc`), iterateCompose_cs (`safePow_safePow`)
+- **8 bridge rules**: 4 forward (block→primitive) + 4 reverse (primitive→block)
+- **2 roundSplit**: `iterate(10,x) → compose(iterate(5,x), iterate(5,x))` (AES/Poseidon)
+
+**Key finding**: `parallelIdentity` and `roundCompose` are UNSOUND for CryptoSemantics:
+- `parallelIdentity`: `min(branchNumber, 0) = 0 ≠ branchNumber`
+- `roundCompose`: compose multiplies degrees, round adds them
+
 ### Concrete verifications
 ```
 AES-128 fitness:           min(64, 150, 140) = 64 bits (birthday-bounded)
@@ -122,74 +148,38 @@ AES satisfies 2-UHF:       4 · 2^6 = 256 = 2^8 ✓ (for 6-bit output)
 | v2.0 | Block constructors + rule discovery + design loop | ✓ Complete |
 | v2.5 | CryptoSemantics + DDT + algebraic degree + fitness | ✓ Complete |
 | v2.6 | Information-theoretic bounds (LHL, 2-UHF, ZK side-info) | ✓ Complete |
+| v2.7 | Zero sorry + AES DDT + NodeSemantics CryptoSemantics | ✓ Complete |
+| v2.8 | Boura-Canteaut bounds (169 thms) + OptiSat completeness | ✓ Complete |
+| v2.9 | Equality saturation ACTIVE + TrustHash DP verdict | ✓ Complete |
+| v2.9.1 | Autopsy fixes (6 findings: 3 CRITICAL + 2 HIGH + 1 MEDIUM) | ✓ Complete |
+| v3.0 | Bidirectional exploration: 3 CS-proven rules + 10 expansion rules + active saturation | ✓ Complete |
 
 ## Work in progress
 
 **Próximos pasos (ordenados por prioridad):**
 
-### 1. Cerrar 2 sorry restantes
-**Qué hacer**: Probar dos lemas técnicos pendientes de v2.0.
-- `MasterTheoremV2.lean:49` — `designLoop_preserves_pool`: componer `designLoopStep_preserves_pool` (ya probado, es `rfl`) inductivamente sobre el loop recursivo con `decreasing_by`.
-- `SmoothE/Extract.lean:57` — `extractParetoV2_length_le`: probar que `List.filterMap` + dedup + filter produce lista ≤ input. Requiere un lema auxiliar `filterMap_length_le` (no está en Init, trivial por inducción sobre la lista).
+### 1. Pipeline `pipeline_soundness_crypto` sobre CryptoSemantics
+**Qué hacer**: El master theorem actual opera sobre `Val := Nat`. El `NodeSemantics CryptoOp CryptoSemantics` instance ya existe (v2.7). La infraestructura es parametric — `optimizeF_soundness` and `saturateF_preserves_consistent_internal` are polymorphic. Only `superhash_pipeline_correct` is hardcoded to Nat. Need to create the crypto instantiation.
 
-**Dificultad**: BAJA. Son cierres mecánicos, no conceptuales. Ambos sorry tienen la estrategia de proof documentada en el comentario adyacente. ~30 min.
+**Dificultad**: MEDIA. The parametric infrastructure means most proofs propagate automatically.
 
-### 2. AES S-box DDT certificada
-**Qué hacer**: Definir la tabla completa de 256 entradas del AES S-box como `ConcreteSbox 8`, computar `diffUniformity` sobre ella, y verificar δ=4 via `native_decide`. Actualmente solo PRESENT (4-bit, 16 entradas) está certificado.
+### 2. Completar integración OptiSat sobre CryptoSemantics
+**Qué hacer**: `CompletenessSpec.lean` already copied from OptiSat. Need to adapt `extractAuto_complete` for CryptoSemantics extraction optimality.
 
-**Dificultad**: BAJA. El código (`ddtEntry`, `diffUniformity`, `CertifiedSbox`) ya existe y funciona para PRESENT. Solo se necesita escribir la tabla literal (256 valores hex del AES S-box, disponible en cualquier referencia) y esperar que `native_decide` termine. El DDT de AES tiene 256×256 = 65,536 comparaciones — debería correr en <10 segundos.
+**Dificultad**: MEDIA.
 
-**Obstáculo potencial**: Si `native_decide` es demasiado lento para 8-bit (65K comparaciones), se puede factorizar la verificación en 256 lemas parciales (uno por fila del DDT) o usar `decide` con heartbeats aumentados.
+### 3. Integración con TrustHash como evaluador de fitness
+**Qué hacer**: TrustHash core (NiceTree + Verdict) already integrated. Remaining: full S-box pipeline adaptation (~31/34 files).
 
-### 3. Pipeline `pipeline_soundness` sobre `CryptoSemantics`
-**Qué hacer**: El master theorem actual (`pipeline_soundness`) opera sobre `Val := Nat`. Crear una versión que opere sobre `CryptoSemantics` (7 campos: algebraicDegree, differentialUniformity, linearBias, branchNumber, activeMinSboxes, latency, gateCount). Esto requiere adaptar 5 componentes en cadena:
-1. `instance : NodeSemantics CryptoOp CryptoSemantics` — instanciar el typeclass con `evalCryptoSem`
-2. `ConsistentCryptoValuation` — adaptar la definición y los ~45 teoremas de preservación (merge, add, rebuild)
-3. `saturateF_preserves_crypto_consistent` — propagar a través de la saturación
-4. `extractF_crypto_correct` — extracción preserva semántica crypto
-5. `pipeline_soundness_crypto` — componer todo en el master theorem
+**Dificultad**: ALTA. TrustHash uses Lean 4.16.0 vs 4.28.0.
 
-**Dificultad**: ALTA (por volumen, no por dificultad conceptual). Los ~200 theorems del E-graph core (Consistency.lean, CoreSpec.lean) están parametrizados por `[NodeSemantics Op Val]`, así que en principio basta instanciar el typeclass. El obstáculo real es que `evalCryptoSem` tiene cases para 12 constructores (vs 8 en v1.0), y cada prueba de preservación necesita cubrir los 4 nuevos cases (spnBlock, feistelBlock, spongeBlock, arxBlock). Estimación: 1-2 días.
+### 4. Formalización general del bound de Boura-Canteaut
+**Estado actual**: 169 theorems (BCD11, BC13, iterated bounds) for concrete cases (AES, Keccak, Poseidon). Missing: general proof via Reed-Muller covering radius.
 
-**Obstáculo principal**: Los proofs de `processClass_shi_combined` (120 líneas) y `merge_consistent` (96 líneas) hacen `cases op` internamente. Agregar 4 constructores multiplica las subgoals. Puede requerir refactorizar esos proofs para usar `<;>` combinators más agresivamente.
+**Dificultad**: MUY_ALTA. Would be the first formalization in any proof assistant.
 
-### 4. Completar integración OptiSat sobre CryptoSemantics
-**Qué hacer**: OptiSat (499 theorems, 0 sorry, `~/Documents/claudio/optisat/`) ya provee el motor E-graph que SuperHash usa. La integración pendiente consiste en:
-1. Verificar que `NodeOps CryptoOp` (ya instanciado con 12 constructores) es compatible con la versión OptiSat
-2. Instanciar `NodeSemantics CryptoOp CryptoSemantics` (mismo que item 3 arriba — son el mismo trabajo)
-3. Copiar/adaptar los theorems de `CompletenessSpec.lean` de OptiSat (BestNodeInv, acyclicity, cost computation) para CryptoSemantics
-4. Adaptar `extractAuto_complete` (OptiSat) para demostrar que la extracción greedy sobre CryptoSemantics es óptima
-
-**Dificultad**: MEDIA-ALTA. OptiSat está en Lean 4 puro (misma base que SuperHash), pero usa una versión anterior del toolchain. Los tipos son compatibles conceptualmente pero pueden diferir en nombres de API (e.g., `Std.HashMap` vs `HashMap` en versiones diferentes de Lean).
-
-**Por qué OptiSat en vez de lean-egg**: OptiSat es infraestructura propia (499 theorems verificados, 0 sorry, sin dependencias externas). lean-egg (Marcus Rossel, POPL 2026) requiere un backend Rust (Cargo) y no tiene release estable. Usar OptiSat elimina la dependencia externa y mantiene toda la TCB dentro de Lean.
-
-### 5. Integración con TrustHash como evaluador de fitness
-**Qué hacer**: Usar el pipeline completo de TrustHash (3,546 declaraciones, `~/Documents/claudio/TrustHash/`) como función de fitness real en el loop autónomo. TrustHash provee:
-- `AutoSboxPipeline`: S-box table → DDT/LAT/ANF → SboxCertifiedParams
-- `RealSaturate`: E-graph saturation con 12 rewrite rules sound
-- Constraint graph → tree decomposition → nice tree
-- `SecurityDP`: DP multi-ronda sobre nice trees → cota de seguridad
-- Veredicto: `security_level = min(generic_floor, structural_cost)`
-
-**Dificultad**: ALTA. TrustHash usa Lean 4.16.0, SuperHash usa 4.28.0. No se puede importar directamente como dependencia lake — hay que copiar/adaptar. Las diferencias de API entre versiones (e.g., `Array.foldl` signature, `Std.HashMap` API, `omega` tactic availability) requieren ajustes en ~50 archivos adaptados. Estimación: 3-5 días.
-
-**Obstáculo principal**: TrustHash define `HashOp` (12 operaciones hash) y `HashExprF` (expression forest) que son tipos DISTINTOS de `CryptoOp` y `CryptoExpr`. Se necesita un bridge type-level: o bien (a) unificar ambos tipos en uno solo, o bien (b) crear funciones de traducción `CryptoOp ↔ HashOp` con proofs de preservación. La opción (b) es más modular pero duplica definiciones.
-
-### 6. Formalización del bound de Boura-Canteaut
-**Qué hacer**: Probar el tight degree composition bound: `deg(G∘F) ≤ n - ⌈(n-deg(G))/deg(F⁻¹)⌉`. Este es EL resultado fundacional para determinar cuántas rondas necesita un hash (Poseidon, Rescue, GMiMC todos usan esta cota para sus round counts).
-
-**Estado actual**: Tenemos verificación concreta para AES (`bouraCanteutBound_aes_concrete`: la fórmula da 7 vs naive 49, probado por `native_decide`) y la cota trivial (`degree_sub_le_n`: n-x ≤ n). Falta la prueba GENERAL de que la fórmula es un upper bound para `deg(G∘F)`.
-
-**Dificultad**: MUY_ALTA. La prueba original (Boura & Canteaut, EUROCRYPT 2011, Theorem 1) usa el covering radius de códigos Reed-Muller punctured. Formalizar esto requiere:
-1. Definir el código Reed-Muller RM(r, n) sobre GF(2)
-2. Probar propiedades del covering radius (teorema de Delsarte)
-3. Conectar covering radius con grado algebraico de composiciones
-4. Ningún proof assistant (Lean, Coq, Isabelle) tiene Reed-Muller codes formalizados
-
-**Estrategia alternativa**: Probar el caso especial para S-boxes bijectivas con `deg(F⁻¹) = n-1` (cubre AES, PRESENT). Este caso se reduce a: `deg(G∘F) ≤ n - 1` cuando `deg(G) < n` y F es permutación, que es más accesible (no requiere Reed-Muller, solo propiedades de permutaciones sobre GF(2)^n).
-
-**Genuinamente novel**: Sería la primera formalización de este bound en cualquier proof assistant. Publicable como resultado independiente.
+### 5. LLM end-to-end integration
+**Qué hacer**: Connect Python orchestrator (AXLE, RLVF) with the verified Lean pipeline for genuine AI-guided hash design.
 
 ## Referencias
 
@@ -201,4 +191,4 @@ AES satisfies 2-UHF:       4 · 2^6 = 256 = 2^8 ✓ (for 6-bit output)
 ---
 
 *Código fuente:* [github.com/manuelpuebla/superhash-lean](https://github.com/manuelpuebla/superhash-lean)
-*51 build jobs · ~490 teoremas · Lean 4.28.0*
+*62 build jobs · ~720 teoremas · 0 sorry · 15 rewrite rules · Lean 4.28.0*

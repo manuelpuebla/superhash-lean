@@ -74,13 +74,15 @@ private def roundGraph :=
 -- Section 4: Non-vacuity — saturation changes the E-graph
 -- ============================================================
 
-/-- Non-vacuity: after saturation with rules, the E-graph has MORE nodes
-    than the initial graph (rules created new equivalent expressions). -/
+/-- Non-vacuity: saturation with roundCompose rule STRICTLY INCREASES
+    the E-graph — round(7,5,x) is decomposed into compose(sbox(7,x), const(5)),
+    creating 3 new nodes (from 2 to 5).
+    v2.9.1 Fix 4: strict inequality (was reflexive ≥). -/
 example :
-  let g := iterateOneGraph
+  let g := roundGraph
   let rules := cryptoPatternRules.map (·.rule)
   let g_sat := saturateF 10 5 3 g rules
-  g_sat.stats.numNodes ≥ g.stats.numNodes := by native_decide
+  g_sat.stats.numNodes > g.stats.numNodes := by native_decide
 
 /-- Non-vacuity: the design loop with active rules terminates with fuel 0. -/
 example :

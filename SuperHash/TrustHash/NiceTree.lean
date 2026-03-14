@@ -98,13 +98,14 @@ def runDP (tree : NiceNode) (costFn : DPCostFn) : Nat :=
 -- Section 3: Concrete cost functions
 -- ============================================================
 
-/-- Differential cost: each leaf contributes δ per S-box.
-    Source: TrustHash/DP/CryptoCost.lean -/
+/-- Differential cost: each introduced vertex adds δ to the cost.
+    Source: TrustHash/DP/DPOperations.lean (dpIntroduce).
+    v2.9.1 Fix 2: introduceCost accumulates (was identity — CRITICAL bug). -/
 def differentialCostFn (delta : Nat) : DPCostFn where
-  leafCost := fun bag => delta * bag.length  -- δ per active variable
-  introduceCost := fun _ childCost => childCost  -- introducing doesn't change cost
-  forgetCost := fun _ childCost => childCost  -- forgetting minimizes (identity here)
-  joinCost := fun l r => l + r  -- join accumulates costs
+  leafCost := fun bag => delta * bag.length  -- δ per active variable in leaf bag
+  introduceCost := fun _ childCost => childCost + delta  -- each new vertex adds δ
+  forgetCost := fun _ childCost => childCost  -- forget: minimize (identity is lower bound)
+  joinCost := fun l r => l + r  -- join: accumulate independent subtree costs
 
 /-- Algebraic cost: degree grows exponentially per round.
     Source: TrustHash/DP/CryptoCost.lean -/

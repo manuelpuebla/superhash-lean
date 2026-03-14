@@ -57,3 +57,5 @@ import SuperHash.Pipeline.CompletenessSpec
 import SuperHash.Bridge.TrustHashFitness
 import SuperHash.TrustHash.NiceTree
 import SuperHash.TrustHash.Verdict
+import SuperHash.Rules.CryptoRulesCS
+import SuperHash.Rules.ExpansionRules
