@@ -1,6 +1,6 @@
-# SuperHash v3.2
+# SuperHash v3.3
 
-**Diseño automático de funciones hash criptográficas con garantías formales: E-graphs + pipeline verificado sobre CryptoSemantics + exploración bidireccional + modelo de seguridad multi-propiedad + teoría de funciones hash universales.**
+**Diseño automático de funciones hash criptográficas con garantías formales: E-graphs + pipeline verificado sobre CryptoSemantics + S-box certification pipeline + modelo de seguridad multi-propiedad + Pareto 6D + grafos expansores + ataques cuánticos.**
 
 ## Qué es
 
@@ -27,10 +27,10 @@ Cada componente respaldado por un teorema verificado en Lean 4. El **master theo
 
 | Métrica | Valor |
 |---------|-------|
-| Build jobs | 65 |
-| Archivos Lean | 67 |
-| LOC | ~19,000 |
-| Teoremas + examples | ~800 |
+| Build jobs | 91 |
+| Archivos Lean | 88 |
+| LOC | ~23,600 |
+| Teoremas + examples | ~1,100 |
 | Sorry | 0 |
 | Axiomas custom | 0 (solo `propext` + `Quot.sound`) |
 | Rewrite rules (Nat) | 15 (5 simplification + 10 expansion) |
@@ -233,6 +233,7 @@ Saturation non-vacuity:    6→17 nodes with 3 rules (native_decide verified)
 | v3.0 | Bidirectional exploration: 3 CS-proven rules + 10 expansion rules | ✓ Complete |
 | v3.1 | UHF integration: SecurityProfile + Carter-Wegman + expander bounds | ✓ Complete |
 | v3.2 | **pipeline_soundness_crypto** + autopsy fixes (2C + 3H + 2M) | ✓ Complete |
+| v3.3 | TrustHash S-box pipeline + quantum bounds + division property + 4D threat lattice + Pareto 6D | ✓ Complete |
 
 ## Work in progress
 
@@ -269,4 +270,4 @@ Connect Python orchestrator (AXLE, RLVF) with the verified Lean pipeline.
 ---
 
 *Código fuente:* [github.com/manuelpuebla/superhash-lean](https://github.com/manuelpuebla/superhash-lean)
-*65 build jobs · ~800 teoremas · 0 sorry · 7 CS-proven rules · pipeline_soundness_crypto · Lean 4.28.0*
+*91 build jobs · ~1,100 teoremas · 0 sorry · S-box pipeline · Pareto 6D · quantum bounds · Lean 4.28.0*

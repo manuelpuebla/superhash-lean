@@ -62,3 +62,32 @@ import SuperHash.Rules.CryptoRulesCS
 import SuperHash.Pipeline.MasterTheoremCS
 import SuperHash.Rules.ExpansionRules
 import SuperHash.Crypto.ExpanderBounds
+-- v3.3 Phase 1: S-box computation foundation
+import SuperHash.Sbox.Bitwise
+import SuperHash.Sbox.FinIter
+import SuperHash.Sbox.SboxTable
+import SuperHash.Sbox.DDTCompute
+import SuperHash.Sbox.LATCompute
+import SuperHash.Sbox.AlgDegreeCompute
+import SuperHash.Sbox.DDTCertificate
+import SuperHash.Sbox.LATCertificate
+import SuperHash.Sbox.SboxBridge
+import SuperHash.Sbox.SboxFullCert
+import SuperHash.Sbox.AutoSboxPipeline
+import SuperHash.Sbox.AES8BitCertified
+-- v3.3 Phase 2: Security modules
+import SuperHash.Security.ThreatLattice4D
+import SuperHash.Security.ActiveSboxBounds
+import SuperHash.Security.QuantumBounds
+import SuperHash.Security.DivisionProperty.Spec
+import SuperHash.Security.DivisionProperty.Propagation
+import SuperHash.Security.DivisionProperty.CostModel
+import SuperHash.Security.AlgExpr
+import SuperHash.Security.ConditionalRewriteRule
+import SuperHash.Security.SecurityVerdict
+-- v3.3 Phase 3: Extended 6D Pareto optimization
+import SuperHash.Pareto.ExtendedMetrics
+import SuperHash.Pareto.ExtendedDominance
+import SuperHash.Pareto.ExtendedExtract
+import SuperHash.Pareto.PipelineBridge
+import SuperHash.Sbox.SboxParetoBridge
