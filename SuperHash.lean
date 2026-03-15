@@ -113,3 +113,20 @@ import SuperHash.Graph.TreewidthDP
 import SuperHash.Graph.DPCompose
 import SuperHash.Graph.DPOptimal
 import SuperHash.Graph.CryptoCost
+-- v4.5 Phase 1: Attack Foundation (Red Team)
+import SuperHash.Attack.AttackOp
+import SuperHash.Attack.AttackSemantics
+import SuperHash.Attack.AttackNodeSemantics
+-- v4.5 Phase 2: Attack Pipeline
+import SuperHash.Attack.AttackExpr
+import SuperHash.Attack.AttackInstances
+import SuperHash.Attack.AttackPipeline
+-- v4.5 Phase 3: Attack Rules + Metrics
+import SuperHash.Attack.AttackMetrics
+import SuperHash.Attack.AttackRules
+-- v4.5 Phase 4: Bridge + Duel
+import SuperHash.Attack.HashSpecBridge
+import SuperHash.Attack.DuelTheorem
+-- v4.5 Phase 5: Co-Evolution Loop + Non-Vacuity
+import SuperHash.Attack.DuelLoop
+import SuperHash.Attack.NonVacuity

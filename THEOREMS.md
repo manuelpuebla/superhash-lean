@@ -1,13 +1,17 @@
 ═══ Specification Audit: superhash_lean ═══
-Theorems: 902  Lemmas: 0  Pipeline: 63
-Clean: 802  T1(vacuity): 1  T1.5(identity): 0  T2(weak): 5  T3(structural): 14  T4(no-witness): 80
+Theorems: 1076  Lemmas: 0  Pipeline: 74
+Clean: 958  T1(vacuity): 2  T1.5(identity): 0  T2(weak): 8  T3(structural): 16  T4(no-witness): 92
 
-── TIER 1 — VACUITY (1 issues) ──
+── TIER 1 — VACUITY (2 issues) ──
   theorem zest_parallel_speedup
     SuperHash/Crypto/ExpanderBounds.lean:296
     ⚠ T1-UNUSED-ALL: all 1 parameters are _-prefixed — likely a stub or vacuous proof
 
-── TIER 2 — WEAK SPECS (5 issues) ──
+  theorem dpMultiJoin_wellformed
+    SuperHash/Graph/DPCompose.lean:176
+    ⚠ T1-UNUSED-ALL: all 2 parameters are _-prefixed — likely a stub or vacuous proof
+
+── TIER 2 — WEAK SPECS (8 issues) ──
   theorem evalOp_ext_cs
     SuperHash/Crypto/CryptoNodeSemantics.lean:154
     ⚠ T2-UNUSED-PARTIAL: 1/3 params are _-prefixed: ['_env']
@@ -24,11 +28,23 @@ Clean: 802  T1(vacuity): 1  T1.5(identity): 0  T2(weak): 5  T3(structural): 14  
     SuperHash/EGraph/Tests.lean:53
     ⚠ T2-UNUSED-PARTIAL: 1/3 params are _-prefixed: ['_env']
 
+  theorem insert_wellformed
+    SuperHash/Graph/DPCompose.lean:170
+    ⚠ T2-UNUSED-PARTIAL: 1/4 params are _-prefixed: ['_h']
+
+  theorem dpMultiForget_wellformed
+    SuperHash/Graph/DPCompose.lean:173
+    ⚠ T2-UNUSED-PARTIAL: 1/3 params are _-prefixed: ['_h']
+
+  theorem hadesTreewidth_pos
+    SuperHash/Graph/TWBridge.lean:48
+    ⚠ T2-UNUSED-PARTIAL: 1/3 params are _-prefixed: ['_ht']
+
   theorem applyRuleAtF_sound [PIPELINE] [SORRY]
     SuperHash/Pipeline/EMatchSpec.lean:999
     ⚠ T2-PIPELINE-SORRY: pipeline theorem contains sorry — top-level result is unverified
 
-── TIER 3 — STRUCTURAL (14 issues) ──
+── TIER 3 — STRUCTURAL (16 issues) ──
   theorem branch_spectral_bridge [PIPELINE]
     SuperHash/Crypto/ExpanderBounds.lean:121
     ⚠ T2-UNUSED-PARTIAL: 2/3 params are _-prefixed: ['_hbn', '_hd']
@@ -53,6 +69,14 @@ Clean: 802  T1(vacuity): 1  T1.5(identity): 0  T2(weak): 5  T3(structural): 14  
   theorem bridge_collision_le_birthday [PIPELINE]
     SuperHash/Crypto/SecurityNotions.lean:389
     ⚠ T3-DIRECTION: name suggests equivalence but conclusion is unidirectional (→ not ↔)
+
+  theorem ilp_extraction_soundness_crypto [PIPELINE]
+    SuperHash/Pipeline/ILPInstances.lean:53
+    ⚠ T3-MANY-HYPOTHESES: 11 hypotheses on pipeline theorem — verify each is satisfiable and necessary
+
+  theorem extract_correct_crypto [PIPELINE]
+    SuperHash/Pipeline/ILPInstances.lean:66
+    ⚠ T3-MANY-HYPOTHESES: 10 hypotheses on pipeline theorem — verify each is satisfiable and necessary
 
   theorem pipeline_soundness [PIPELINE]
     SuperHash/Pipeline/MasterTheorem.lean:35
@@ -86,7 +110,7 @@ Clean: 802  T1(vacuity): 1  T1.5(identity): 0  T2(weak): 5  T3(structural): 14  
     SuperHash/Rules/SoundRule.lean:87
     ⚠ T3-NAME-MISMATCH: name contains 'sound' but conclusion has no equality, biconditional, or implication
 
-── TIER 4 — NO WITNESS (80 issues) ──
+── TIER 4 — NO WITNESS (92 issues) ──
   theorem add_node_triple
     SuperHash/EGraph/AddNodeTriple.lean:17
     ⚠ T4-NO-WITNESS: 5 Prop hypotheses but no non-vacuity example found in Tests/NonVacuity*.lean or same file
@@ -260,6 +284,26 @@ Clean: 802  T1(vacuity): 1  T1.5(identity): 0  T2(weak): 5  T3(structural): 14  
     SuperHash/EGraph/UnionFind.lean:1162
     ⚠ T4-NO-WITNESS: 3 Prop hypotheses but no non-vacuity example found in Tests/NonVacuity*.lean or same file
 
+  theorem niceTreeFold_inv
+    SuperHash/Graph/CryptoCost.lean:44
+    ⚠ T4-NO-WITNESS: 4 Prop hypotheses but no non-vacuity example found in Tests/NonVacuity*.lean or same file
+
+  theorem niceTreeFold_inv_ext
+    SuperHash/Graph/CryptoCost.lean:59
+    ⚠ T4-NO-WITNESS: 4 Prop hypotheses but no non-vacuity example found in Tests/NonVacuity*.lean or same file
+
+  theorem niceTreeFold_pair_inv
+    SuperHash/Graph/CryptoCost.lean:77
+    ⚠ T4-NO-WITNESS: 4 Prop hypotheses but no non-vacuity example found in Tests/NonVacuity*.lean or same file
+
+  theorem niceTreeFold_lower_bound
+    SuperHash/Graph/CryptoCost.lean:97
+    ⚠ T4-NO-WITNESS: 4 Prop hypotheses but no non-vacuity example found in Tests/NonVacuity*.lean or same file
+
+  theorem dpComplete_always
+    SuperHash/Graph/DPOptimal.lean:97
+    ⚠ T4-NO-WITNESS: 5 Prop hypotheses but no non-vacuity example found in Tests/NonVacuity*.lean or same file
+
   theorem extractWeighted_correct [PIPELINE]
     SuperHash/Pareto/Extract.lean:111
     ⚠ T3-MANY-HYPOTHESES: 12 hypotheses on pipeline theorem — verify each is satisfiable and necessary
@@ -345,6 +389,36 @@ Clean: 802  T1(vacuity): 1  T1.5(identity): 0  T2(weak): 5  T3(structural): 14  
     ⚠ T3-MANY-HYPOTHESES: 13 hypotheses on pipeline theorem — verify each is satisfiable and necessary
     ⚠ T4-NO-WITNESS: 5 Prop hypotheses [pipeline, threshold=2] but no non-vacuity example found in Tests/NonVacuity*.lean or same file
 
+  theorem extract_correct [PIPELINE]
+    SuperHash/Pipeline/ExtractionStrategy.lean:62
+    ⚠ T3-MANY-HYPOTHESES: 11 hypotheses on pipeline theorem — verify each is satisfiable and necessary
+    ⚠ T4-NO-WITNESS: 5 Prop hypotheses [pipeline, threshold=2] but no non-vacuity example found in Tests/NonVacuity*.lean or same file
+
+  theorem checkExactlyOne_sound [PIPELINE]
+    SuperHash/Pipeline/ILPSpec.lean:89
+    ⚠ T4-NO-WITNESS: 2 Prop hypotheses [pipeline, threshold=2] but no non-vacuity example found in Tests/NonVacuity*.lean or same file
+
+  theorem checkChildDeps_sound [PIPELINE]
+    SuperHash/Pipeline/ILPSpec.lean:131
+    ⚠ T3-MANY-HYPOTHESES: 9 hypotheses on pipeline theorem — verify each is satisfiable and necessary
+    ⚠ T4-NO-WITNESS: 4 Prop hypotheses [pipeline, threshold=2] but no non-vacuity example found in Tests/NonVacuity*.lean or same file
+
+  theorem checkAcyclicity_sound [PIPELINE]
+    SuperHash/Pipeline/ILPSpec.lean:167
+    ⚠ T3-MANY-HYPOTHESES: 9 hypotheses on pipeline theorem — verify each is satisfiable and necessary
+    ⚠ T4-NO-WITNESS: 4 Prop hypotheses [pipeline, threshold=2] but no non-vacuity example found in Tests/NonVacuity*.lean or same file
+
+  theorem extractILP_correct [PIPELINE]
+    SuperHash/Pipeline/ILPSpec.lean:242
+    ⚠ T2-UNUSED-PARTIAL: 1/12 params are _-prefixed: ['_hvalid']
+    ⚠ T3-MANY-HYPOTHESES: 12 hypotheses on pipeline theorem — verify each is satisfiable and necessary
+    ⚠ T4-NO-WITNESS: 4 Prop hypotheses [pipeline, threshold=2] but no non-vacuity example found in Tests/NonVacuity*.lean or same file
+
+  theorem ilp_extraction_soundness [PIPELINE]
+    SuperHash/Pipeline/ILPSpec.lean:304
+    ⚠ T3-MANY-HYPOTHESES: 12 hypotheses on pipeline theorem — verify each is satisfiable and necessary
+    ⚠ T4-NO-WITNESS: 5 Prop hypotheses [pipeline, threshold=2] but no non-vacuity example found in Tests/NonVacuity*.lean or same file
+
   theorem superhash_pipeline_correct [PIPELINE]
     SuperHash/Pipeline/Integration.lean:56
     ⚠ T3-MANY-HYPOTHESES: 13 hypotheses on pipeline theorem — verify each is satisfiable and necessary
@@ -426,6 +500,10 @@ Clean: 802  T1(vacuity): 1  T1.5(identity): 0  T2(weak): 5  T3(structural): 14  
   theorem improvement_rule_preserves_consistency
     SuperHash/Rules/SoundRule.lean:160
     ⚠ T4-NO-WITNESS: 7 Prop hypotheses but no non-vacuity example found in Tests/NonVacuity*.lean or same file
+
+  theorem full_rounds_cost
+    SuperHash/Security/DivisionProperty/CostModel.lean:170
+    ⚠ T4-NO-WITNESS: 3 Prop hypotheses but no non-vacuity example found in Tests/NonVacuity*.lean or same file
 
   theorem security_monotone
     SuperHash/Security/ThreatLattice4D.lean:298
