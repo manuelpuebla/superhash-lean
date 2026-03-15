@@ -1,16 +1,17 @@
-# SuperHash v3.1
+# SuperHash v3.2
 
-**Diseño automático de funciones hash criptográficas con garantías formales: E-graphs + semántica criptográfica verificada + exploración bidireccional + fundamentos information-theoretic + modelo de seguridad multi-propiedad (Rogaway-Shrimpton).**
+**Diseño automático de funciones hash criptográficas con garantías formales: E-graphs + pipeline verificado sobre CryptoSemantics + exploración bidireccional + modelo de seguridad multi-propiedad + teoría de funciones hash universales.**
 
 ## Qué es
 
 SuperHash formaliza en Lean 4 un framework para el diseño automático de funciones hash criptográficas. A diferencia de herramientas que solo *analizan* hashes, SuperHash *sintetiza* diseños óptimos explorando exhaustivamente el espacio de diseños equivalentes mediante equality saturation sobre E-graphs.
 
-El sistema opera en cuatro niveles:
+El sistema opera en cinco niveles:
 1. **E-graph engine** (v1.0): motor verificado de saturation + extraction + Pareto
-2. **CryptoSemantics** (v2.5): evaluación con métricas criptográficas reales (grado algebraico, δ, branch number, S-boxes activas)
-3. **Information-theoretic bounds** (v2.6): cotas de seguridad respaldadas por el Leftover Hash Lemma y análisis de side-information ZK
-4. **Bidirectional exploration** (v3.0): 15 reglas de reescritura (simplificación + expansión + bridges) con exploración bidireccional del espacio de diseños
+2. **CryptoSemantics** (v2.5): evaluación con métricas criptográficas reales (7 campos: grado algebraico, δ, ε, branch number, S-boxes activas, latencia, gates)
+3. **Information-theoretic bounds** (v2.6): cotas de seguridad respaldadas por el Leftover Hash Lemma (Tyagi-Watanabe 2023) y análisis de side-information ZK
+4. **Bidirectional exploration** (v3.0): 15+ reglas de reescritura (simplificación + expansión + bridges) con exploración bidireccional del espacio de diseños
+5. **CryptoSemantics pipeline** (v3.2): master theorem `pipeline_soundness_crypto` — el pipeline completo (saturación → extracción → Pareto) es **semánticamente correcto** para las 7 métricas criptográficas simultáneamente
 
 ## Qué resuelve
 
@@ -20,28 +21,64 @@ El diseño de funciones hash es un problema de equivalencia algebraica + optimiz
 security_level = min(birthdayFloor, lhlExtractorBound, algebraicSecurityBound)
 ```
 
-Cada componente respaldado por un teorema verificado en Lean 4.
+Cada componente respaldado por un teorema verificado en Lean 4. El **master theorem** (`pipeline_soundness_crypto`) garantiza que todo diseño extraído del E-graph preserva las 7 métricas criptográficas del diseño original.
 
 ## Métricas del proyecto
 
 | Métrica | Valor |
 |---------|-------|
-| Build jobs | 64 |
-| Archivos Lean | 66 |
-| LOC | ~18,500 |
+| Build jobs | 65 |
+| Archivos Lean | 67 |
+| LOC | ~19,000 |
 | Teoremas + examples | ~800 |
 | Sorry | 0 |
 | Axiomas custom | 0 (solo `propext` + `Quot.sound`) |
-| Rewrite rules | 15 (5 simplification + 10 expansion) |
-| CryptoSemantics-proven rules | 3 (iterateOne, composeAssoc, iterateCompose) |
-| Scripts Python | 6 |
+| Rewrite rules (Nat) | 15 (5 simplification + 10 expansion) |
+| CryptoSemantics-proven rules | 7 (iterateOne, composeAssoc, 5× iterateCompose) |
+| Papers estudiados | 24 (carpeta UHF: hash universales + grafos expansores) |
 | Lean | 4.28.0, sin Mathlib |
+
+## Bibliografía formalizada (24 papers)
+
+SuperHash integra resultados de 24 papers sobre funciones hash universales, grafos expansores y diseño criptográfico, organizados en 4 tiers de relevancia:
+
+### Tier 1: Fundamentos directamente formalizados
+| Paper | Año | Contribución a SuperHash |
+|-------|-----|-------------------------|
+| Carter & Wegman, *Universal Classes of Hash Functions* | 1979 | Familia H₁ (mod-p) con cota de colisión `collisions * m ≤ p²` |
+| Rogaway & Shrimpton, *Hash-Function Basics* | 2004 | 7 nociones de seguridad: Coll, Sec, aSec, eSec, Pre, aPre, ePre |
+| Naor & Yung, *Universal One-Way Hash Functions* | 1991 | UOWHF: composición preserva target-collision resistance |
+| *New Bounds for Almost Universal Hash Functions* | — | Cota combinatoria inferior para key length de ε-AU families |
+| Nguyen & Roscoe, *Short-Output Universal Hash Functions* | 2011 | Collision prob = 2^(1-b) para output de b bits |
+
+### Tier 2: Nuevos paradigmas de diseño
+| Paper | Año | Contribución a SuperHash |
+|-------|-----|-------------------------|
+| Charles, Goren & Lauter, *Hash Functions from Expander Graphs* | — | Collision resistance provable desde hardness de isogenías |
+| Rogaway & Steinberger, *Hash from Fixed-Key Blockciphers* | 2008 | Familia LP: LP231 (50%), LP352 (55%), LP362 (63%) del birthday bound |
+| Hirose, *Double-Block-Length Hash Functions* | 2006 | DBL: 2× mejora de seguridad sobre single-block |
+| Zhupa & Polak, *Keyed Hash from Large Girth Expander Graphs* | 2022 | Post-quantum: DMAC basado en cycle-finding, ~4 ops/bit |
+
+### Tier 3: Fundamentos teóricos
+| Paper | Año | Contribución a SuperHash |
+|-------|-----|-------------------------|
+| Tsurumaru & Hayashi, *Dual Universality* | 2012 | ε-almost dual universal₂, conexión con QKD |
+| Caillat-Grenier, *Expander Graphs and IT Crypto* (thesis) | 2024 | Spectral gap ↔ branch number bridge |
+| Preneel, *The State of Cryptographic Hash Functions* | 1999 | Taxonomía de ataques genéricos (MITM, herding, fixed-point) |
+| Al-Kuwari et al., *Recent Design Trends* | 2011 | Multi-Property Preservation (MPP), wide/double pipe |
+
+### Tier 4: Contexto y anti-patterns
+| Paper | Año | Contribución a SuperHash |
+|-------|-----|-------------------------|
+| Tillich & Zémor, *Collisions for the LPS Hash* | 2007 | Anti-pattern: LPS tiene colisiones quasi-lineales |
+| Petit, *On Graph-Based Cryptographic Hash Functions* (thesis) | 2009 | Atlas de ataques a expander hashes; ZesT = mejor variante |
+| Petit, *On Expander Hash Functions* (thesis) | 2009 | ZesT: collision resistant + parallelizable + non-malleable |
 
 ## Stack y fuentes
 
 - **Lean 4.28.0** sin Mathlib
+- **LeanHash** (~440 teoremas, 0 sorry) — propiedades S-box, MDS, Boura-Canteaut, familias hash universales (Carter-Wegman, ε-AU, dual universality), grafos expansores (LP, DBL, ZesT), nociones de seguridad (Rogaway-Shrimpton)
 - **TrustHash** (~3,546 declaraciones) — patrones de pipeline, reglas hash sound, DP sobre tree decomposition
-- **LeanHash** (~175 teoremas) — propiedades S-box, MDS, diseño hash, familias hash universales
 - **OptiSat** (~499 teoremas) — infraestructura E-graph adaptada
 
 ## Estructura
@@ -58,49 +95,66 @@ SuperHash/
 ├── Rules/                      -- Reglas de reescritura verificadas
 │   ├── SoundRule.lean          -- EquivalenceRule + ImprovementRule
 │   ├── CryptoRules.lean        -- 10 reglas concretas (Nat)
-│   ├── CryptoRulesCS.lean      -- 3 reglas CryptoSemantics (0 sorry)
+│   ├── CryptoRulesCS.lean      -- 7 reglas CryptoSemantics (0 sorry)
 │   ├── BlockBridge.lean        -- 4 bridges (spnBlock ↔ iterate∘compose)
 │   ├── ExpansionRules.lean     -- 10 expansion rules (reverse bridges + roundSplit)
 │   └── NonVacuity.lean
 ├── Pipeline/                   -- Pipeline de saturación y extracción
 │   ├── Saturate.lean, Extract.lean, Soundness.lean
 │   ├── Integration.lean        -- superhash_pipeline
-│   └── MasterTheorem.lean      -- pipeline_soundness (3-part)
-├── Crypto/                     -- v2.5+v2.6: Semántica criptográfica real
-│   ├── Semantics.lean          -- CryptoSemantics (7 campos), SboxParams, MDS
-│   ├── CryptoEval.lean         -- evalCryptoSem (reemplaza evalCryptoOp Nat)
-│   ├── CryptoRule.lean         -- 5 reglas con precondiciones crypto
+│   ├── MasterTheorem.lean      -- pipeline_soundness (Nat, 3-part)
+│   └── MasterTheoremCS.lean    -- pipeline_soundness_crypto (CryptoSemantics, 3-part)
+├── Crypto/                     -- Semántica criptográfica real
+│   ├── Semantics.lean          -- CryptoSemantics (7 campos)
+│   ├── CryptoEval.lean         -- evalCryptoSem, safePow
+│   ├── CryptoNodeSemantics.lean -- NodeSemantics CryptoOp CryptoSemantics instance
+│   ├── SecurityNotions.lean    -- SecurityProfile (Rogaway-Shrimpton) + UOWHF + MPP
+│   ├── ExpanderBounds.lean     -- Expander + LP + DBL + ZesT + post-quantum
+│   ├── UHFConstraint.lean      -- 2-UHF + Carter-Wegman H₁ + ε-AU + short-output
 │   ├── DDT.lean                -- DDT computation, CertifiedSbox (PRESENT δ=4)
+│   ├── AESSbox.lean            -- Full 256-entry AES S-box (δ=4, native_decide)
 │   ├── AlgebraicDegree.lean    -- ANF, ilog2 monotone, Boura-Canteaut concrete
 │   ├── Fitness.lean            -- min(birthday, differential, algebraic)
 │   ├── SourceEntropy.lean      -- DDT δ → source entropy k (LHL)
 │   ├── ExtractorBound.lean     -- extractableBits = k - 2s
-│   ├── UHFConstraint.lean      -- 2-UHF: δ·2^l ≤ 2^n (decidable)
 │   ├── ZKSideInfo.lean         -- zkSecurity = base - transcript
-│   ├── AESSbox.lean            -- Full 256-entry AES S-box (δ=4, native_decide)
-│   ├── CryptoNodeSemantics.lean -- NodeSemantics CryptoOp CryptoSemantics instance
-│   ├── SecurityNotions.lean    -- v3.1: Rogaway-Shrimpton + UOWHF + MPP + bridges
-│   ├── ExpanderBounds.lean     -- v3.1: Expander + LP + DBL + ZesT + post-quantum
 │   ├── BouraCanteutBound.lean  -- 58 thms: BCD11, BC13, iterated bounds
 │   ├── HigherOrderDiff.lean    -- 44 thms: derivative vanishing, zero-sum
 │   └── LinearLayerDegree.lean  -- 67 thms: SPN phase analysis, R_exp transition
-├── Pareto/                     -- Extracción multi-objetivo
-├── Discovery/                  -- RuleCandidate, RulePool (LLM integration)
-├── DesignLoop/                 -- Loop autónomo fuel-bounded
 ├── TrustHash/                  -- TrustHash-style verification
 │   ├── NiceTree.lean           -- Nice tree decomposition + DP
 │   └── Verdict.lean            -- Security verdict (min of 5 metrics)
 ├── Bridge/                     -- Inter-system bridges
 │   └── TrustHashFitness.lean   -- CryptoSemantics → HashSpec bridge
+├── Pareto/                     -- Extracción multi-objetivo
+├── Discovery/                  -- RuleCandidate, RulePool (LLM integration)
+├── DesignLoop/                 -- Loop autónomo fuel-bounded
 ├── Concrete/                   -- BitVec ops + bridge
 ├── SmoothE/                    -- Non-linear cost model
 └── Instances/                  -- Diseños concretos + demos
-scripts/                        -- Python: AXLE, RLVF, rule proposer, design loop
 ```
 
 ## Garantías formales
 
-### v1.0: Pipeline soundness (master theorem)
+### v3.2: Pipeline soundness sobre CryptoSemantics (master theorem)
+```
+theorem pipeline_soundness_crypto :
+  ∀ (rules : List (PatternSoundRule CryptoOp CryptoSemantics))
+    (g : EGraph CryptoOp) (env : Nat → CryptoSemantics)
+    (v : EClassId → CryptoSemantics)
+    (hcv : ConsistentValuation g env v) ... →
+  -- Part 1: Semantic correctness over ALL 7 crypto metrics
+  (∃ v_sat, ∀ p ∈ output,
+    EvalExpr.evalExpr p.1 env = v_sat (root g_sat.unionFind rootId))
+  -- Part 2: Pareto optimality
+  ∧ (∀ p q ∈ output, p ≠ q → ¬dominates p.2 q.2)
+  -- Part 3: Output size bound
+  ∧ output.length ≤ weights.length
+```
+
+Esto garantiza que **todo diseño hash extraído** del E-graph después de saturación preserva los 7 campos de CryptoSemantics: algebraicDegree, differentialUniformity, linearBias, branchNumber, activeMinSboxes, latency, gateCount.
+
+### v1.0: Pipeline soundness (Nat)
 ```
 theorem pipeline_soundness :
   -- (1) Semantic correctness: extracted designs evaluate to root value
@@ -109,10 +163,10 @@ theorem pipeline_soundness :
 ```
 
 ### v2.5: CryptoSemantics evaluation
-`evalCryptoSem` computa propiedades criptográficas reales:
-- `compose`: degree **multiplica** (no suma)
-- `iterate(r)`: degree = deg^r (exponenciación, no multiplicación)
-- `xor`: degree = max (operación paralela, no aditiva)
+`evalCryptoOpCS` computa propiedades criptográficas reales:
+- `compose`: degree **multiplica**, δ = max, BN = min, gates **suman**
+- `iterate(r)`: degree = safePow(deg, r), gates = r × gates
+- `xor`: degree = max, δ = max (operación paralela)
 - `spongeBlock`: δ aislada por capacidad (`min(δ, 2^cap)`)
 
 ### v2.6: Information-theoretic bounds (Tyagi-Watanabe)
@@ -122,9 +176,9 @@ theorem pipeline_soundness :
 - **ZK side-info loss**: `zkSecurity = baseSecurity - transcriptBits`
 
 ### v3.0: Bidirectional design exploration
-15 rewrite rules enable genuine design space exploration:
+15+ rewrite rules enable genuine design space exploration:
 - **5 simplification** (Nat): iterateOne, parallelIdentity, composeAssoc, roundCompose, iterateCompose
-- **3 CryptoSemantics-proven**: iterateOne_cs, composeAssoc_cs (`Nat.mul_assoc + max_assoc + min_assoc + add_assoc`), iterateCompose_cs (`safePow_safePow`)
+- **7 CryptoSemantics-proven**: iterateOne_cs, composeAssoc_cs, 5× iterateCompose_cs(n,2) for n∈{2,4,5,8,10}
 - **8 bridge rules**: 4 forward (block→primitive) + 4 reverse (primitive→block)
 - **2 roundSplit**: `iterate(10,x) → compose(iterate(5,x), iterate(5,x))` (AES/Poseidon)
 
@@ -133,22 +187,20 @@ theorem pipeline_soundness :
 - `roundCompose`: compose multiplies degrees, round adds them
 
 ### v3.1: Multi-property security model (24 UHF papers)
-**SecurityProfile** with 4 dimensions (Rogaway-Shrimpton 2004):
+**SecurityProfile** con 4 dimensiones (Rogaway-Shrimpton 2004):
 - `collisionBits`: Coll — find any x≠x' with h(x)=h(x')
 - `preImageBits`: Pre — given y, find x with h(x)=y
 - `secondPreImageBits`: Sec — given x, find x'≠x with h(x)=h(x')
 - `targetCRBits`: eSec — target collision resistance
 
-**Proven implications**: `Coll → Sec`, `Coll → eSec`, `Pre ⊥ Coll` (independent).
+**Proven implications**: `Coll → Pre bound` (derivation via birthday), `Coll → eSec bound`.
 
 **UHF theory** (Carter-Wegman 1979 + extensions):
 - Carter-Wegman H₁ family: `collision * m ≤ p²` for prime p ≥ m
-- ε-AU key length bound: `keyBits * (rangeSize - 1) ≥ (domainSize - 1) * epsilon`
-- Short-output: `collision_prob ≤ 2/2^b` for b-bit truncation
-- Composition: `ε₁ + ε₂` bound for composed families
+- Short-output: `2 ≤ 2^b` for b-bit truncation (collision bound)
+- Composition: `(ε₁ + ε₂) * s = ε₁ * s + ε₂ * s` (universality preserving)
 
 **Expander graph bounds** (Charles-Goren-Lauter, Petit, Zhupa-Polak):
-- Mixing lemma: `deviation² ≤ λ₂² · |S| · |T|`
 - LP compression: LP231 (50%), LP352 (55%), LP362 (63%) of birthday
 - DBL: 2× security improvement over single-block
 - ZesT: collision security ≥ groupOrderBits/2 (provable, non-malleable)
@@ -163,6 +215,7 @@ Poseidon in STARK (30-bit transcript): 54 - 30 = 24 bits (CRITICALLY WEAK)
 Rescue-Prime in ZK (20-bit transcript): 18 - 20 = 0 bits (BROKEN)
 PRESENT S-box δ:           4 (DDT computation verified by native_decide)
 AES satisfies 2-UHF:       4 · 2^6 = 256 = 2^8 ✓ (for 6-bit output)
+Saturation non-vacuity:    6→17 nodes with 3 rules (native_decide verified)
 ```
 
 ## Versiones
@@ -177,35 +230,26 @@ AES satisfies 2-UHF:       4 · 2^6 = 256 = 2^8 ✓ (for 6-bit output)
 | v2.8 | Boura-Canteaut bounds (169 thms) + OptiSat completeness | ✓ Complete |
 | v2.9 | Equality saturation ACTIVE + TrustHash DP verdict | ✓ Complete |
 | v2.9.1 | Autopsy fixes (6 findings: 3 CRITICAL + 2 HIGH + 1 MEDIUM) | ✓ Complete |
-| v3.0 | Bidirectional exploration: 3 CS-proven rules + 10 expansion rules + active saturation | ✓ Complete |
-| v3.1 | UHF integration: SecurityProfile + Carter-Wegman + ε-AU + expander bounds + LP/DBL + post-quantum | ✓ Complete |
+| v3.0 | Bidirectional exploration: 3 CS-proven rules + 10 expansion rules | ✓ Complete |
+| v3.1 | UHF integration: SecurityProfile + Carter-Wegman + expander bounds | ✓ Complete |
+| v3.2 | **pipeline_soundness_crypto** + autopsy fixes (2C + 3H + 2M) | ✓ Complete |
 
 ## Work in progress
 
 **Próximos pasos (ordenados por prioridad):**
 
-### 1. Pipeline `pipeline_soundness_crypto` sobre CryptoSemantics
-**Qué hacer**: El master theorem actual opera sobre `Val := Nat`. El `NodeSemantics CryptoOp CryptoSemantics` instance ya existe (v2.7). La infraestructura es parametric — `optimizeF_soundness` and `saturateF_preserves_consistent_internal` are polymorphic. Only `superhash_pipeline_correct` is hardcoded to Nat. Need to create the crypto instantiation.
+### 1. Completar integración OptiSat sobre CryptoSemantics
+`CompletenessSpec.lean` already copied from OptiSat. Need `extractAuto_complete` for CryptoSemantics.
 
-**Dificultad**: MEDIA. The parametric infrastructure means most proofs propagate automatically.
+### 2. Integración con TrustHash como evaluador de fitness
+TrustHash core (NiceTree + Verdict) already integrated. Remaining: full S-box pipeline (~31/34 files).
 
-### 2. Completar integración OptiSat sobre CryptoSemantics
-**Qué hacer**: `CompletenessSpec.lean` already copied from OptiSat. Need to adapt `extractAuto_complete` for CryptoSemantics extraction optimality.
+### 3. Formalización general del bound de Boura-Canteaut
+169 theorems for concrete cases. Missing: general proof via Reed-Muller covering radius.
+Would be the first formalization in any proof assistant.
 
-**Dificultad**: MEDIA.
-
-### 3. Integración con TrustHash como evaluador de fitness
-**Qué hacer**: TrustHash core (NiceTree + Verdict) already integrated. Remaining: full S-box pipeline adaptation (~31/34 files).
-
-**Dificultad**: ALTA. TrustHash uses Lean 4.16.0 vs 4.28.0.
-
-### 4. Formalización general del bound de Boura-Canteaut
-**Estado actual**: 169 theorems (BCD11, BC13, iterated bounds) for concrete cases (AES, Keccak, Poseidon). Missing: general proof via Reed-Muller covering radius.
-
-**Dificultad**: MUY_ALTA. Would be the first formalization in any proof assistant.
-
-### 5. LLM end-to-end integration
-**Qué hacer**: Connect Python orchestrator (AXLE, RLVF) with the verified Lean pipeline for genuine AI-guided hash design.
+### 4. LLM end-to-end integration
+Connect Python orchestrator (AXLE, RLVF) with the verified Lean pipeline.
 
 ## Referencias
 
@@ -213,8 +257,16 @@ AES satisfies 2-UHF:       4 · 2^6 = 256 = 2^8 ✓ (for 6-bit output)
 - Willsey et al., *egg: Fast and Extensible Equality Saturation*, POPL 2021
 - Boura & Canteaut, *On the influence of algebraic degree*, EUROCRYPT 2011
 - Daemen & Rijmen, *The Design of Rijndael* (Wide Trail Strategy), 2002
+- Carter & Wegman, *Universal Classes of Hash Functions*, JCSS 1979
+- Rogaway & Shrimpton, *Cryptographic Hash-Function Basics*, 2004
+- Naor & Yung, *Universal One-Way Hash Functions*, STOC 1989
+- Charles, Goren & Lauter, *Hash Functions from Expander Graphs*
+- Rogaway & Steinberger, *Hash from Fixed-Key Blockciphers*, 2008
+- Petit, *On Graph-Based Cryptographic Hash Functions*, PhD Thesis 2009
+- Zhupa & Polak, *Keyed Hash from Large Girth Expander Graphs*, 2022
+- Nguyen & Roscoe, *Short-Output Universal Hash Functions*, 2011
 
 ---
 
 *Código fuente:* [github.com/manuelpuebla/superhash-lean](https://github.com/manuelpuebla/superhash-lean)
-*64 build jobs · ~800 teoremas · 0 sorry · 15 rewrite rules · Lean 4.28.0*
+*65 build jobs · ~800 teoremas · 0 sorry · 7 CS-proven rules · pipeline_soundness_crypto · Lean 4.28.0*

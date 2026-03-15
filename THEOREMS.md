@@ -1,8 +1,13 @@
 ═══ Specification Audit: superhash_lean ═══
-Theorems: 528  Lemmas: 0  Pipeline: 31
-Clean: 442  T1(vacuity): 0  T1.5(identity): 0  T2(weak): 4  T3(structural): 3  T4(no-witness): 79
+Theorems: 613  Lemmas: 0  Pipeline: 39
+Clean: 515  T1(vacuity): 1  T1.5(identity): 0  T2(weak): 9  T3(structural): 9  T4(no-witness): 79
 
-── TIER 2 — WEAK SPECS (4 issues) ──
+── TIER 1 — VACUITY (1 issues) ──
+  theorem zest_parallel_speedup
+    SuperHash/Crypto/ExpanderBounds.lean:310
+    ⚠ T1-UNUSED-ALL: all 1 parameters are _-prefixed — likely a stub or vacuous proof
+
+── TIER 2 — WEAK SPECS (9 issues) ──
   theorem evalOp_ext_cs
     SuperHash/Crypto/CryptoNodeSemantics.lean:154
     ⚠ T2-UNUSED-PARTIAL: 1/3 params are _-prefixed: ['_env']
@@ -10,6 +15,26 @@ Clean: 442  T1(vacuity): 0  T1.5(identity): 0  T2(weak): 4  T3(structural): 3  T
   theorem round_reduce_safe
     SuperHash/Crypto/CryptoRule.lean:137
     ⚠ T2-UNUSED-PARTIAL: 1/3 params are _-prefixed: ['_hr']
+
+  theorem expander_collision_bound
+    SuperHash/Crypto/ExpanderBounds.lean:94
+    ⚠ T2-UNUSED-PARTIAL: 1/3 params are _-prefixed: ['_h_coverage']
+
+  theorem lp_security_mono
+    SuperHash/Crypto/ExpanderBounds.lean:203
+    ⚠ T2-UNUSED-PARTIAL: 1/2 params are _-prefixed: ['_h_calls']
+
+  theorem expander_quantum_robustness
+    SuperHash/Crypto/ExpanderBounds.lean:400
+    ⚠ T2-UNUSED-PARTIAL: 1/2 params are _-prefixed: ['_h_grover']
+
+  theorem coll_implies_sec
+    SuperHash/Crypto/SecurityNotions.lean:119
+    ⚠ T2-UNUSED-PARTIAL: 1/3 params are _-prefixed: ['_h_coll']
+
+  theorem coll_implies_eSec
+    SuperHash/Crypto/SecurityNotions.lean:129
+    ⚠ T2-UNUSED-PARTIAL: 1/3 params are _-prefixed: ['_h_coll']
 
   theorem evalOp_ext_proof
     SuperHash/EGraph/Tests.lean:53
@@ -19,7 +44,32 @@ Clean: 442  T1(vacuity): 0  T1.5(identity): 0  T2(weak): 4  T3(structural): 3  T
     SuperHash/Pipeline/EMatchSpec.lean:999
     ⚠ T2-PIPELINE-SORRY: pipeline theorem contains sorry — top-level result is unverified
 
-── TIER 3 — STRUCTURAL (3 issues) ──
+── TIER 3 — STRUCTURAL (9 issues) ──
+  theorem branch_spectral_bridge [PIPELINE]
+    SuperHash/Crypto/ExpanderBounds.lean:124
+    ⚠ T2-UNUSED-PARTIAL: 2/3 params are _-prefixed: ['_hbn', '_hd']
+    ⚠ T3-DIRECTION: name suggests equivalence but conclusion is unidirectional (→ not ↔)
+
+  theorem cryptosemantics_branch_spectral_bridge [PIPELINE]
+    SuperHash/Crypto/ExpanderBounds.lean:146
+    ⚠ T3-DIRECTION: name suggests equivalence but conclusion is unidirectional (→ not ↔)
+
+  theorem bridge_is_ideal_bounded [PIPELINE]
+    SuperHash/Crypto/SecurityNotions.lean:365
+    ⚠ T3-DIRECTION: name suggests equivalence but conclusion is unidirectional (→ not ↔)
+
+  theorem bridge_collision_le_diff [PIPELINE]
+    SuperHash/Crypto/SecurityNotions.lean:382
+    ⚠ T3-DIRECTION: name suggests equivalence but conclusion is unidirectional (→ not ↔)
+
+  theorem bridge_collision_le_alg [PIPELINE]
+    SuperHash/Crypto/SecurityNotions.lean:389
+    ⚠ T3-DIRECTION: name suggests equivalence but conclusion is unidirectional (→ not ↔)
+
+  theorem bridge_collision_le_birthday [PIPELINE]
+    SuperHash/Crypto/SecurityNotions.lean:396
+    ⚠ T3-DIRECTION: name suggests equivalence but conclusion is unidirectional (→ not ↔)
+
   theorem pipeline_soundness [PIPELINE]
     SuperHash/Pipeline/MasterTheorem.lean:35
     ⚠ T3-MANY-HYPOTHESES: 12 hypotheses on pipeline theorem — verify each is satisfiable and necessary

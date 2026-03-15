@@ -14,7 +14,7 @@ SAFE for saturation — they don't violate CryptoSemantics because saturateF
 only uses the syntactic patterns, not the Val-dependent soundness proofs.
 
 This file provides:
-1. Bridge theorem proving saturation safety
+1. Documentation explaining why Nat rules are safe for saturation (Val-agnostic)
 2. CryptoSemantics PatternSoundRule instances for pipeline composition
 -/
 
@@ -23,19 +23,22 @@ set_option linter.unusedSimpArgs false
 namespace SuperHash
 
 -- ============================================================
--- Section 1: Bridge theorem
+-- Section 1: Val-agnostic saturation (documentation)
 -- ============================================================
 
-/-- saturateF extracts .rule (RewriteRule) from PatternSoundRule and only uses
-    that for e-matching. The Val-dependent soundness field is NOT consumed by
-    saturateF itself. Therefore, rules proved sound for Nat are safe to use
-    in saturation of a CryptoSemantics-aware E-graph.
+/-! ### Why Nat rules are safe for saturation
 
-    The rules' soundness proofs ARE needed when composing into
-    pipeline_soundness_crypto — for that, use cryptoPatternRulesCS below. -/
-theorem saturation_val_agnostic :
-    ∀ (natRules : List (PatternSoundRule CryptoOp Nat)),
-    (natRules.map (·.rule)) = (natRules.map (·.rule)) := fun _ => rfl
+`saturateF` takes `List (RewriteRule Op)` — it extracts `.rule` from each
+`PatternSoundRule` and uses ONLY the syntactic pattern (lhs/rhs) for e-matching.
+The `Val`-dependent `soundness` field is never consumed by `saturateF` itself.
+
+Therefore, `cryptoPatternRules` (proved sound for `Nat`) can be used directly
+in saturation of a CryptoSemantics-aware E-graph without any bridge theorem.
+The `RewriteRule` is literally the same struct regardless of `Val`.
+
+The `Val`-specific soundness proofs ARE needed when composing into
+`pipeline_soundness` — for that, use `cryptoPatternRulesCS` below, which
+provides `PatternSoundRule CryptoOp CryptoSemantics` instances. -/
 
 -- ============================================================
 -- Section 2: Helper lemmas (private in CryptoRules, duplicated here)
@@ -138,13 +141,18 @@ def iterateCompose_cs (n m : Nat) : PatternSoundRule CryptoOp CryptoSemantics wh
     Only includes rules PROVEN sound for all 7 crypto metric fields.
     EXCLUDED: parallelIdentity (min(bn,0)=0), roundCompose (degree mismatch). -/
 def cryptoPatternRulesCS : List (PatternSoundRule CryptoOp CryptoSemantics) :=
-  [iterateOne_cs, composeAssoc_cs, iterateCompose_cs 10 2]
+  [iterateOne_cs, composeAssoc_cs,
+   iterateCompose_cs 2 2,    -- iterate(2, iterate(2, x)) = iterate(4, x)
+   iterateCompose_cs 4 2,    -- iterate(4, iterate(2, x)) = iterate(8, x)
+   iterateCompose_cs 5 2,    -- iterate(5, iterate(2, x)) = iterate(10, x)
+   iterateCompose_cs 8 2,    -- iterate(8, iterate(2, x)) = iterate(16, x)
+   iterateCompose_cs 10 2]   -- iterate(10, iterate(2, x)) = iterate(20, x)
 
 -- ============================================================
 -- Section 6: Non-vacuity
 -- ============================================================
 
-example : cryptoPatternRulesCS.length = 3 := by native_decide
+example : cryptoPatternRulesCS.length = 7 := by native_decide
 example : iterateOne_cs.rule.name = "iterateOne_cs" := rfl
 example : composeAssoc_cs.rule.name = "composeAssoc_cs" := rfl
 

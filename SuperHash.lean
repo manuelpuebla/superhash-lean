@@ -59,5 +59,6 @@ import SuperHash.Bridge.TrustHashFitness
 import SuperHash.TrustHash.NiceTree
 import SuperHash.TrustHash.Verdict
 import SuperHash.Rules.CryptoRulesCS
+import SuperHash.Pipeline.MasterTheoremCS
 import SuperHash.Rules.ExpansionRules
 import SuperHash.Crypto.ExpanderBounds

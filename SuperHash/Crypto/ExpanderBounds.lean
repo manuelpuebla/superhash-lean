@@ -59,13 +59,10 @@ theorem gap_bounded (ep : ExpanderParams) :
 -- T1b: Expander Mixing Lemma (combinatorial, squared form)
 -- ============================================================
 
-/-- **Expander mixing lemma (squared form).**
-    For sets S, T in a d-regular expander with second eigenvalue lambda_2:
-      |E(S,T) - d * |S| * |T| / n|^2 <= lambda_2^2 * |S| * |T|
-    We encode: deviation_sq <= lambda2Sq * sSize * tSize.
-
-    (Caillat-Grenier 2024, Theorem 2.1; Alon-Milman 1985) -/
-theorem mixing_lemma_squared (lambda2Sq sSize tSize deviation_sq : Nat)
+/-- **Mixing bound associativity helper.**
+    Rewrites `a * b * c` to `a * (b * c)` in the mixing lemma bound.
+    This is Nat.mul_assoc applied to the expander mixing bound form. -/
+theorem mixing_bound_assoc (lambda2Sq sSize tSize deviation_sq : Nat)
     (h_bound : deviation_sq ≤ lambda2Sq * sSize * tSize) :
     deviation_sq ≤ lambda2Sq * (sSize * tSize) := by
   rwa [Nat.mul_assoc] at h_bound
@@ -196,19 +193,12 @@ def lp362 : LPCompression where
   h_output_lt_input := by omega
   h_calls_pos := by omega
 
-/-- **LP security monotonicity**: for comparable families,
-    more cipher calls -> higher security exponent.
+-- LP security monotonicity (Rogaway & Steinberger 2008, Theorem 2):
+-- More cipher calls -> higher security exponent. This is a design-level
+-- property verified concretely for LP231/LP352/LP362 in the examples below.
 
-    (Rogaway & Steinberger 2008, Theorem 2) -/
-theorem lp_security_mono (lp1 lp2 : LPCompression)
-    (_h_calls : lp1.cipherCalls ≤ lp2.cipherCalls)
-    (h_sec : lp1.securityExp ≤ lp2.securityExp) :
-    lp1.securityExp ≤ lp2.securityExp := h_sec
-
-/-- **LP always achieves at least birthday bound** (securityExp >= 50 = N^{0.50}).
-    (Rogaway & Steinberger 2008, Theorem 1: all LP achieve >= birthday) -/
-theorem lp_birthday_lower (lp : LPCompression) (h : lp.securityExp ≥ 50) :
-    lp.securityExp ≥ 50 := h
+-- LP always achieves at least birthday bound (securityExp >= 50 = N^{0.50}).
+-- (Rogaway & Steinberger 2008, Theorem 1). Verified concretely below for all instances.
 
 /-- LP compression ratio: output is strictly smaller than input. -/
 theorem lp_compresses (lp : LPCompression) : lp.outputBlocks < lp.inputBlocks :=
@@ -294,16 +284,12 @@ theorem zest_collision_security (groupOrderBits zestSecurity : Nat)
 theorem zest_security_mono (bits1 bits2 : Nat) (h : bits1 ≤ bits2) :
     bits1 / 2 ≤ bits2 / 2 := by omega
 
-/-- **ZesT resists LPS lifting attack.**
-    The LPS attack reduces collision-finding to factoring in Z[i].
-    ZesT uses SL_2(F_q) where the representation problem is HARDER
-    than factoring -- there is no known subexponential algorithm.
-    Encoded: representation cost >= groupOrderBits/2 > factoringCost.
-
-    (Petit 2009, S5: "ZesT avoids the Tillich-Zemor lifting weakness") -/
-theorem zest_resists_lps_lifting (groupOrderBits factoringCost : Nat)
-    (h_repr_harder : groupOrderBits / 2 > factoringCost) :
-    factoringCost < groupOrderBits / 2 := h_repr_harder
+-- ZesT resists LPS lifting attack (Petit 2009, §5):
+-- The LPS attack reduces collision-finding to factoring in Z[i].
+-- ZesT uses SL_2(F_q) where the representation problem is HARDER
+-- than factoring -- there is no known subexponential algorithm.
+-- The key property (groupOrderBits/2 > factoringCost) follows from
+-- the hardness assumption and is verified for concrete instances.
 
 /-- ZesT is parallelizable: independent blocks processed concurrently.
     With p processors, time reduces by factor p. -/
@@ -336,14 +322,10 @@ structure LPSParams where
   h_prime_pos : primeBits > 0
   deriving Repr
 
-/-- **LPS collision cost is quasi-linear: O(messageLength * log(p)).**
-    This is the WEAKNESS that motivates ZesT and other post-LPS designs.
-    Encoded: collisionCost <= messageLength * logFactor.
-
-    (Tillich & Zemor 2007, Theorem 1) -/
-theorem lps_collision_cost_linear (messageLength logFactor collisionCost : Nat)
-    (h_bound : collisionCost ≤ messageLength * logFactor) :
-    collisionCost ≤ messageLength * logFactor := h_bound
+-- LPS collision cost is quasi-linear: O(messageLength * log(p))
+-- (Tillich & Zemor 2007, Theorem 1).
+-- This WEAKNESS motivates ZesT and other post-LPS designs.
+-- Verified concretely: lpsSmall.messageLength * lpsSmall.primeBits = 7000.
 
 /-- **LPS collision finding is subexponential in group order.**
     For PSL_2(F_p) with |G| approx p^3, collision cost is O(p * log(p)),
@@ -392,15 +374,10 @@ theorem pq_quantum_le_classical (pq : PostQuantumHash) :
 theorem grover_collision_bound (outputBits : Nat) :
     outputBits / 4 ≤ outputBits / 2 := by omega
 
-/-- Expander hash quantum robustness: graph structure limits Grover.
-    When quantum security >= classical/3 (better than Grover's classical/2 reduction),
-    the triple bound holds.
-
-    (Zhupa & Polak 2022, Theorem 3) -/
-theorem expander_quantum_robustness (classicalBits quantumBits : Nat)
-    (_h_grover : quantumBits * 2 ≥ classicalBits)
-    (h_graph : quantumBits * 3 ≥ classicalBits) :
-    quantumBits * 3 ≥ classicalBits := h_graph
+-- Expander hash quantum robustness (Zhupa & Polak 2022, Theorem 3):
+-- Graph structure limits Grover: quantum security >= classical/3
+-- (better than Grover's classical/2 reduction).
+-- Verified concretely for aes128PQ and sha256PQ instances.
 
 -- ============================================================
 -- T9: Concrete Instances

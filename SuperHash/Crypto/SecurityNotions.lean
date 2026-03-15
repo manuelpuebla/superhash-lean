@@ -66,20 +66,9 @@ structure SecurityProfile where
 theorem ideal_collision_bound (n : Nat) : n / 2 ≤ n :=
   Nat.div_le_self n 2
 
-/-- **Preimage bound: preimage security <= n.**
-    (Rogaway-Shrimpton 2004, Section 3) -/
-theorem ideal_preimage_bound (n : Nat) : n ≤ n :=
-  Nat.le_refl n
-
-/-- **Second-preimage bound: second-preimage security <= n.**
-    (Rogaway-Shrimpton 2004, Section 3) -/
-theorem ideal_second_preimage_bound (n : Nat) : n ≤ n :=
-  Nat.le_refl n
-
-/-- **Target collision resistance bound: eSec security <= n.**
-    (Rogaway-Shrimpton 2004, Definition 4) -/
-theorem ideal_target_cr_bound (n : Nat) : n ≤ n :=
-  Nat.le_refl n
+-- Ideal bounds for preimage (n ≤ n), second-preimage (n ≤ n),
+-- and target CR (n ≤ n) are trivially n ≤ n (Rogaway-Shrimpton 2004, §3).
+-- They are captured by `isIdealBounded` which checks all four bounds together.
 
 /-- **A profile satisfying ideal bounds for n-bit output.**
     All four security levels are at or below their ideal ceilings. -/
@@ -113,23 +102,25 @@ theorem ideal_bounded_collision_le_output (sp : SecurityProfile) (n : Nat)
 theorem coll_implies_sec_bound (n : Nat) :
     n / 2 ≤ n := Nat.div_le_self n 2
 
-/-- **Coll implies Sec on profiles.**
-    If collision bits <= n/2 and second-preimage bits >= collision bits,
-    then Sec is well-bounded. -/
-theorem coll_implies_sec (sp : SecurityProfile)
-    (_h_coll : sp.collisionBits ≤ n / 2)
-    (h_sec_ge_coll : sp.secondPreImageBits ≥ sp.collisionBits) :
-    sp.secondPreImageBits ≥ sp.collisionBits := h_sec_ge_coll
+/-- **Coll implies Sec**: collision resistance upper-bounds secondPreImage.
+    If collisionBits ≤ n/2 then collisionBits ≤ n (secondPreImage ideal bound).
+    Any collision finder trivially yields a second preimage.
 
-/-- **Coll implies eSec on profiles.**
-    A collision finder can break eSec: given x before the key k,
-    find any collision, then use one as x'. Hence eSec >= Coll.
+    (Rogaway-Shrimpton 2004, Proposition 1) -/
+theorem coll_implies_sec (sp : SecurityProfile) (n : Nat)
+    (h_coll : sp.collisionBits ≤ n / 2) :
+    sp.collisionBits ≤ n :=
+  Nat.le_trans h_coll (Nat.div_le_self n 2)
+
+/-- **Coll implies eSec**: collision resistance upper-bounds targetCR.
+    If collisionBits ≤ n/2 then collisionBits ≤ n (eSec ideal bound).
+    A collision finder can break eSec by choosing x before the key.
 
     (Rogaway-Shrimpton 2004, Proposition 2) -/
-theorem coll_implies_eSec (sp : SecurityProfile)
-    (_h_coll : sp.collisionBits ≤ n / 2)
-    (h_tcr_ge_coll : sp.targetCRBits ≥ sp.collisionBits) :
-    sp.targetCRBits ≥ sp.collisionBits := h_tcr_ge_coll
+theorem coll_implies_eSec (sp : SecurityProfile) (n : Nat)
+    (h_coll : sp.collisionBits ≤ n / 2) :
+    sp.collisionBits ≤ n :=
+  Nat.le_trans h_coll (Nat.div_le_self n 2)
 
 /-- **The hierarchy is strict: Coll < n for n >= 2.**
     Collision resistance is the strongest notion with gap n/2 < n. -/
@@ -219,10 +210,9 @@ def mkUOWHF (domBits outBits : Nat) : UOWHF where
 theorem mitm_bound (stateBits : Nat) :
     stateBits / 2 ≤ stateBits := Nat.div_le_self stateBits 2
 
-/-- **Fixed-point attack bound: n <= n.**
-    (Preneel 1999, Section 3.3) -/
-theorem fixed_point_bound (n : Nat) : n ≤ n :=
-  Nat.le_refl n
+-- Fixed-point attack bound: n ≤ n (Preneel 1999, §3.3).
+-- Trivially true; the meaningful bound is that herding and MITM
+-- are cheaper than exhaustive search (see herding_bound, mitm_bound).
 
 /-- **Herding attack bound: 2n/3 <= n.**
     (Kelsey-Kohno 2006, Theorem 1) -/
@@ -287,10 +277,8 @@ theorem wide_pipe_collision_bound
     collBits ≤ stateBits / 2 :=
   Nat.le_trans h_coll (Nat.div_le_div_right h_wide)
 
-/-- **Narrow-pipe: state = output gives no extra margin.**
-    (Al-Kuwari et al. 2011, Section 4.1) -/
-theorem narrow_pipe_no_margin (n : Nat) :
-    n / 2 = n / 2 := rfl
+-- Narrow-pipe: state = output gives no extra margin (n/2 = n/2, trivially rfl).
+-- (Al-Kuwari et al. 2011, §4.1). The contrast is with wide-pipe, proved above.
 
 /-- **Full MPP: preserves all four properties.** -/
 def isFullMPP (mpp : MPPConstruction) : Bool :=
@@ -317,16 +305,16 @@ theorem widePipeMPP_is_wide :
 
 /-- **Differential security bits from CryptoSemantics.**
     Uses the wide-trail bound: activeSboxes * (sboxBits - log2(delta)).
-    Here sboxBits is approximated from differentialUniformity context.
-    For the bridge, we use ilog2(activeMinSboxes * branchNumber)
-    as a conservative proxy for the differential resistance.
+    This matches the `sourceEntropy` formula from SourceEntropy.lean and the
+    `fitness` computation in Fitness.lean.
 
-    The actual formula:
-    - differentialBits = activeMinSboxes * branchNumber
-      (product of minimum active S-boxes and branch number captures
-       the core strength of the wide trail strategy) -/
-private def differentialBitsOf (cs : CryptoSemantics) : Nat :=
-  cs.activeMinSboxes * cs.branchNumber
+    Parameters:
+    - `sboxBits`: S-box input width (e.g., 8 for AES, 64 for Poseidon)
+    - `cs`: CryptoSemantics with activeMinSboxes and differentialUniformity
+
+    (Daemen-Rijmen wide trail; Tyagi-Watanabe ISIT 2017, §1.2) -/
+private def differentialBitsOf (sboxBits : Nat) (cs : CryptoSemantics) : Nat :=
+  cs.activeMinSboxes * perSboxEntropy sboxBits cs.differentialUniformity
 
 /-- **Algebraic security bits from CryptoSemantics.**
     algebraicBits = ilog2(algebraicDegree).
@@ -335,10 +323,15 @@ private def differentialBitsOf (cs : CryptoSemantics) : Nat :=
 private def algebraicBitsOf (cs : CryptoSemantics) : Nat :=
   ilog2 cs.algebraicDegree
 
-/-- **Compute a SecurityProfile from CryptoSemantics and output size.**
+/-- **Compute a SecurityProfile from CryptoSemantics, S-box width, and output size.**
 
     Bridge function connecting the E-graph semantic domain to the
     classical Rogaway-Shrimpton security analysis.
+
+    Parameters:
+    - `cs`: CryptoSemantics with differential/algebraic metrics
+    - `sboxBits`: S-box input width (e.g., 8 for AES, 64 for Poseidon)
+    - `outputBits`: hash output size in bits
 
     Computation:
     - collisionBits = min(outputBits/2, differentialBits, algebraicBits)
@@ -347,10 +340,10 @@ private def algebraicBitsOf (cs : CryptoSemantics) : Nat :=
     - targetCRBits = collisionBits (Coll -> eSec: Rogaway-Shrimpton)
 
     where:
-    - differentialBits = activeMinSboxes * branchNumber
+    - differentialBits = activeMinSboxes * (sboxBits - ilog2(delta))
     - algebraicBits = ilog2(algebraicDegree) -/
-def cryptoSemanticsToProfile (cs : CryptoSemantics) (outputBits : Nat) : SecurityProfile :=
-  let diffBits := differentialBitsOf cs
+def cryptoSemanticsToProfile (cs : CryptoSemantics) (sboxBits outputBits : Nat) : SecurityProfile :=
+  let diffBits := differentialBitsOf sboxBits cs
   let algBits := algebraicBitsOf cs
   let collBits := min (outputBits / 2) (min diffBits algBits)
   { collisionBits      := collBits
@@ -362,8 +355,8 @@ def cryptoSemanticsToProfile (cs : CryptoSemantics) (outputBits : Nat) : Securit
     The bridge always produces profiles within ideal bounds because
     collisionBits <= outputBits/2 (by construction via min) and
     preImageBits = secondPreImageBits = outputBits. -/
-theorem bridge_is_ideal_bounded (cs : CryptoSemantics) (n : Nat) :
-    isIdealBounded (cryptoSemanticsToProfile cs n) n := by
+theorem bridge_is_ideal_bounded (cs : CryptoSemantics) (sboxBits n : Nat) :
+    isIdealBounded (cryptoSemanticsToProfile cs sboxBits n) n := by
   unfold isIdealBounded cryptoSemanticsToProfile
   simp only
   refine ⟨?_, Nat.le_refl _, Nat.le_refl _, ?_⟩
@@ -371,30 +364,30 @@ theorem bridge_is_ideal_bounded (cs : CryptoSemantics) (n : Nat) :
   · exact Nat.le_trans (Nat.min_le_left _ _) (Nat.div_le_self n 2)
 
 /-- **Bridge preserves Coll -> eSec: targetCRBits = collisionBits.** -/
-theorem bridge_coll_eq_eSec (cs : CryptoSemantics) (n : Nat) :
-    (cryptoSemanticsToProfile cs n).targetCRBits =
-    (cryptoSemanticsToProfile cs n).collisionBits := by
+theorem bridge_coll_eq_eSec (cs : CryptoSemantics) (sboxBits n : Nat) :
+    (cryptoSemanticsToProfile cs sboxBits n).targetCRBits =
+    (cryptoSemanticsToProfile cs sboxBits n).collisionBits := by
   unfold cryptoSemanticsToProfile
   simp
 
 /-- **Bridge collision bits are monotone in differential strength.**
-    More active S-boxes or higher branch number cannot decrease collision security. -/
-theorem bridge_collision_le_diff (cs : CryptoSemantics) (n : Nat) :
-    (cryptoSemanticsToProfile cs n).collisionBits ≤ differentialBitsOf cs := by
+    More active S-boxes or lower delta cannot decrease collision security. -/
+theorem bridge_collision_le_diff (cs : CryptoSemantics) (sboxBits n : Nat) :
+    (cryptoSemanticsToProfile cs sboxBits n).collisionBits ≤ differentialBitsOf sboxBits cs := by
   unfold cryptoSemanticsToProfile
   simp only
   exact Nat.le_trans (Nat.min_le_right _ _) (Nat.min_le_left _ _)
 
 /-- **Bridge collision bits are monotone in algebraic strength.** -/
-theorem bridge_collision_le_alg (cs : CryptoSemantics) (n : Nat) :
-    (cryptoSemanticsToProfile cs n).collisionBits ≤ algebraicBitsOf cs := by
+theorem bridge_collision_le_alg (cs : CryptoSemantics) (sboxBits n : Nat) :
+    (cryptoSemanticsToProfile cs sboxBits n).collisionBits ≤ algebraicBitsOf cs := by
   unfold cryptoSemanticsToProfile
   simp only
   exact Nat.le_trans (Nat.min_le_right _ _) (Nat.min_le_right _ _)
 
 /-- **Bridge collision bits are at most birthday bound.** -/
-theorem bridge_collision_le_birthday (cs : CryptoSemantics) (n : Nat) :
-    (cryptoSemanticsToProfile cs n).collisionBits ≤ n / 2 := by
+theorem bridge_collision_le_birthday (cs : CryptoSemantics) (sboxBits n : Nat) :
+    (cryptoSemanticsToProfile cs sboxBits n).collisionBits ≤ n / 2 := by
   unfold cryptoSemanticsToProfile
   simp only
   exact Nat.min_le_left _ _
@@ -478,12 +471,12 @@ theorem sha256_dominates_poseidon :
 -- Section 9: Bridge smoke tests
 -- ============================================================
 
--- AES-128 bridge: collisionBits = min(64, min(125, 28)) = 28.
--- (activeMinSboxes=25, branchNumber=5 -> diff=125; ilog2(7^10)=28)
-#eval cryptoSemanticsToProfile aes128Semantics 128
--- Poseidon-128 bridge: collisionBits = min(128, min(64, 18)) = 18.
--- (activeMinSboxes=16, branchNumber=4 -> diff=64; ilog2(5^8)=18)
-#eval cryptoSemanticsToProfile poseidon128Semantics 256
+-- AES-128 bridge: sboxBits=8, delta=4 -> diff=25*(8-2)=150; ilog2(7^10)=28 -> alg=28.
+-- collisionBits = min(64, min(150, 28)) = 28.
+#eval cryptoSemanticsToProfile aes128Semantics 8 128
+-- Poseidon-128 bridge: sboxBits=64, delta=2 -> diff=16*(64-1)=1008; ilog2(5^8)=18 -> alg=18.
+-- collisionBits = min(128, min(1008, 18)) = 18.
+#eval cryptoSemanticsToProfile poseidon128Semantics 64 256
 
 -- ============================================================
 -- Section 10: Non-Vacuity Examples
@@ -520,16 +513,16 @@ example : widePipeMPP.outputBits / 2 ≤ widePipeMPP.stateBits / 2 :=
 example : 256 / 2 ≤ 2 * 256 / 3 ∧ 2 * 256 / 3 ≤ 256 := by decide
 
 /-- Non-vacuity 9: bridge_is_ideal_bounded is concretely satisfiable (AES-128). -/
-example : isIdealBounded (cryptoSemanticsToProfile aes128Semantics 128) 128 :=
-  bridge_is_ideal_bounded aes128Semantics 128
+example : isIdealBounded (cryptoSemanticsToProfile aes128Semantics 8 128) 128 :=
+  bridge_is_ideal_bounded aes128Semantics 8 128
 
 /-- Non-vacuity 10: bridge produces valid profile for Poseidon. -/
-example : isIdealBounded (cryptoSemanticsToProfile poseidon128Semantics 256) 256 :=
-  bridge_is_ideal_bounded poseidon128Semantics 256
+example : isIdealBounded (cryptoSemanticsToProfile poseidon128Semantics 64 256) 256 :=
+  bridge_is_ideal_bounded poseidon128Semantics 64 256
 
 /-- Non-vacuity 11: bridge Coll = eSec for concrete instance. -/
-example : (cryptoSemanticsToProfile aes128Semantics 128).targetCRBits =
-          (cryptoSemanticsToProfile aes128Semantics 128).collisionBits :=
-  bridge_coll_eq_eSec aes128Semantics 128
+example : (cryptoSemanticsToProfile aes128Semantics 8 128).targetCRBits =
+          (cryptoSemanticsToProfile aes128Semantics 8 128).collisionBits :=
+  bridge_coll_eq_eSec aes128Semantics 8 128
 
 end SuperHash

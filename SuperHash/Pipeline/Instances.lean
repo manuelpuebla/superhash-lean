@@ -1,5 +1,6 @@
 import SuperHash.Pipeline.Extract
 import SuperHash.Rules.CryptoRules
+import SuperHash.Crypto.CryptoNodeSemantics
 
 /-!
 # SuperHash.Pipeline.Instances — CryptoOp extraction + evaluation instances
@@ -186,5 +187,247 @@ theorem reconstructCrypto_total (op : CryptoOp) (children : List CryptoExpr)
   | .feistelBlock _ _, [_], _ => rfl
   | .spongeBlock _ _ _, [_], _ => rfl
   | .arxBlock _ _ _ _, [_, _, _], _ => rfl
+
+-- ============================================================
+-- CryptoSemantics evaluation for CryptoExpr
+-- ============================================================
+
+/-- Evaluate a CryptoExpr in the CryptoSemantics domain.
+    Mirrors CryptoExpr.eval but computes real crypto metrics
+    via evalCryptoOpCS-compatible semantics.
+    env maps external variable IDs to CryptoSemantics values. -/
+def CryptoExpr.evalCS (e : CryptoExpr) (env : Nat → CryptoSemantics) : CryptoSemantics :=
+  match e with
+  | .sbox d c =>
+    let child := c.evalCS env
+    { algebraicDegree := d * child.algebraicDegree
+      differentialUniformity := child.differentialUniformity
+      linearBias := child.linearBias
+      branchNumber := child.branchNumber
+      activeMinSboxes := child.activeMinSboxes + 1
+      latency := child.latency + 1
+      gateCount := child.gateCount + d }
+  | .linear bn c =>
+    let child := c.evalCS env
+    { algebraicDegree := child.algebraicDegree
+      differentialUniformity := child.differentialUniformity
+      linearBias := child.linearBias
+      branchNumber := bn
+      activeMinSboxes := child.activeMinSboxes
+      latency := child.latency + 1
+      gateCount := child.gateCount + bn }
+  | .xor l r =>
+    let vl := l.evalCS env; let vr := r.evalCS env
+    { algebraicDegree := max vl.algebraicDegree vr.algebraicDegree
+      differentialUniformity := max vl.differentialUniformity vr.differentialUniformity
+      linearBias := max vl.linearBias vr.linearBias
+      branchNumber := min vl.branchNumber vr.branchNumber
+      activeMinSboxes := max vl.activeMinSboxes vr.activeMinSboxes
+      latency := max vl.latency vr.latency + 1
+      gateCount := vl.gateCount + vr.gateCount + 1 }
+  | .round d bn c =>
+    let child := c.evalCS env
+    { algebraicDegree := d * child.algebraicDegree
+      differentialUniformity := child.differentialUniformity
+      linearBias := child.linearBias
+      branchNumber := bn
+      activeMinSboxes := child.activeMinSboxes + 1
+      latency := child.latency + 2
+      gateCount := child.gateCount + d + bn }
+  | .compose f s =>
+    let vf := f.evalCS env; let vs := s.evalCS env
+    { algebraicDegree := vf.algebraicDegree * vs.algebraicDegree
+      differentialUniformity := max vf.differentialUniformity vs.differentialUniformity
+      linearBias := max vf.linearBias vs.linearBias
+      branchNumber := min vf.branchNumber vs.branchNumber
+      activeMinSboxes := vf.activeMinSboxes + vs.activeMinSboxes
+      latency := vf.latency + vs.latency
+      gateCount := vf.gateCount + vs.gateCount }
+  | .parallel l r =>
+    let vl := l.evalCS env; let vr := r.evalCS env
+    { algebraicDegree := max vl.algebraicDegree vr.algebraicDegree
+      differentialUniformity := max vl.differentialUniformity vr.differentialUniformity
+      linearBias := max vl.linearBias vr.linearBias
+      branchNumber := min vl.branchNumber vr.branchNumber
+      activeMinSboxes := vl.activeMinSboxes + vr.activeMinSboxes
+      latency := max vl.latency vr.latency
+      gateCount := vl.gateCount + vr.gateCount }
+  | .iterate n b =>
+    let body := b.evalCS env
+    { algebraicDegree := safePow body.algebraicDegree n
+      differentialUniformity := body.differentialUniformity
+      linearBias := body.linearBias
+      branchNumber := body.branchNumber
+      activeMinSboxes := n * body.activeMinSboxes
+      latency := n * body.latency
+      gateCount := n * body.gateCount }
+  | .const val =>
+    { algebraicDegree := val
+      differentialUniformity := 0
+      linearBias := 0
+      branchNumber := 0
+      activeMinSboxes := 0
+      latency := 0
+      gateCount := 0 }
+  | .var id => env id
+  | .spnBlock r s l =>
+    let vs := s.evalCS env; let vl := l.evalCS env
+    { algebraicDegree := safePow (vs.algebraicDegree * vl.algebraicDegree) r
+      differentialUniformity := max vs.differentialUniformity vl.differentialUniformity
+      linearBias := max vs.linearBias vl.linearBias
+      branchNumber := vl.branchNumber
+      activeMinSboxes := r * (mds_branchNumber vl.branchNumber) / 2
+      latency := r * (vs.latency + vl.latency)
+      gateCount := r * (vs.gateCount + vl.gateCount) }
+  | .feistelBlock r f =>
+    let vf := f.evalCS env
+    { algebraicDegree := safePow vf.algebraicDegree r
+      differentialUniformity := vf.differentialUniformity
+      linearBias := vf.linearBias
+      branchNumber := vf.branchNumber
+      activeMinSboxes := r * vf.activeMinSboxes
+      latency := r * vf.latency
+      gateCount := r * vf.gateCount }
+  | .spongeBlock rt cap p =>
+    let vp := p.evalCS env
+    { algebraicDegree := safePow vp.algebraicDegree rt
+      differentialUniformity :=
+        if cap > 0 then min vp.differentialUniformity (2 ^ cap)
+        else vp.differentialUniformity
+      linearBias := vp.linearBias
+      branchNumber := vp.branchNumber
+      activeMinSboxes := rt * vp.activeMinSboxes
+      latency := rt * vp.latency + cap
+      gateCount := rt * vp.gateCount }
+  | .arxBlock r a rot x =>
+    let va := a.evalCS env; let vrot := rot.evalCS env; let vx := x.evalCS env
+    { algebraicDegree := safePow (va.algebraicDegree + vrot.algebraicDegree + vx.algebraicDegree) r
+      differentialUniformity := max va.differentialUniformity (max vrot.differentialUniformity vx.differentialUniformity)
+      linearBias := max va.linearBias (max vrot.linearBias vx.linearBias)
+      branchNumber := min va.branchNumber (min vrot.branchNumber vx.branchNumber)
+      activeMinSboxes := r * (va.activeMinSboxes + vrot.activeMinSboxes + vx.activeMinSboxes)
+      latency := r * (va.latency + vrot.latency + vx.latency)
+      gateCount := r * (va.gateCount + vrot.gateCount + vx.gateCount) }
+
+instance : EvalExpr CryptoExpr CryptoSemantics where
+  evalExpr := CryptoExpr.evalCS
+
+-- ============================================================
+-- ExtractableSound for CryptoSemantics
+-- ============================================================
+
+/-- ExtractableSound for CryptoOp/CryptoExpr/CryptoSemantics.
+    Bridges extracted CryptoExpr evaluation (via evalCS) to
+    e-graph NodeSemantics evaluation (via evalCryptoOpCS).
+    Same 12-case proof structure as crypto_extractable_sound (Nat version). -/
+theorem crypto_extractable_sound_cs : ExtractableSound CryptoOp CryptoExpr CryptoSemantics := by
+  intro op childExprs expr env v hrecon hlen hchildren
+  simp only [Extractable.reconstruct] at hrecon
+  cases op with
+  | sbox d c =>
+    simp only [reconstructCrypto] at hrecon
+    split at hrecon <;> simp at hrecon; subst hrecon
+    simp only [EvalExpr.evalExpr, CryptoExpr.evalCS, NodeSemantics.evalOp, evalCryptoOpCS]
+    have h0 := hchildren 0 (by simp) (by simp [NodeOps.children, CryptoOp.children])
+    simp only [EvalExpr.evalExpr, NodeOps.children, CryptoOp.children,
+               List.getElem_cons_zero] at h0
+    rw [h0]
+  | linear b c =>
+    simp only [reconstructCrypto] at hrecon
+    split at hrecon <;> simp at hrecon; subst hrecon
+    simp only [EvalExpr.evalExpr, CryptoExpr.evalCS, NodeSemantics.evalOp, evalCryptoOpCS]
+    have h0 := hchildren 0 (by simp) (by simp [NodeOps.children, CryptoOp.children])
+    simp only [EvalExpr.evalExpr, NodeOps.children, CryptoOp.children,
+               List.getElem_cons_zero] at h0
+    rw [h0]
+  | xor l r =>
+    simp only [reconstructCrypto] at hrecon
+    split at hrecon <;> simp at hrecon; subst hrecon
+    simp only [EvalExpr.evalExpr, CryptoExpr.evalCS, NodeSemantics.evalOp, evalCryptoOpCS]
+    have h0 := hchildren 0 (by simp) (by simp [NodeOps.children, CryptoOp.children])
+    have h1 := hchildren 1 (by simp) (by simp [NodeOps.children, CryptoOp.children])
+    simp only [EvalExpr.evalExpr, NodeOps.children, CryptoOp.children,
+               List.getElem_cons_zero, List.getElem_cons_succ] at h0 h1
+    rw [h0, h1]
+  | round d b c =>
+    simp only [reconstructCrypto] at hrecon
+    split at hrecon <;> simp at hrecon; subst hrecon
+    simp only [EvalExpr.evalExpr, CryptoExpr.evalCS, NodeSemantics.evalOp, evalCryptoOpCS]
+    have h0 := hchildren 0 (by simp) (by simp [NodeOps.children, CryptoOp.children])
+    simp only [EvalExpr.evalExpr, NodeOps.children, CryptoOp.children,
+               List.getElem_cons_zero] at h0
+    rw [h0]
+  | compose f s =>
+    simp only [reconstructCrypto] at hrecon
+    split at hrecon <;> simp at hrecon; subst hrecon
+    simp only [EvalExpr.evalExpr, CryptoExpr.evalCS, NodeSemantics.evalOp, evalCryptoOpCS]
+    have h0 := hchildren 0 (by simp) (by simp [NodeOps.children, CryptoOp.children])
+    have h1 := hchildren 1 (by simp) (by simp [NodeOps.children, CryptoOp.children])
+    simp only [EvalExpr.evalExpr, NodeOps.children, CryptoOp.children,
+               List.getElem_cons_zero, List.getElem_cons_succ] at h0 h1
+    rw [h0, h1]
+  | parallel l r =>
+    simp only [reconstructCrypto] at hrecon
+    split at hrecon <;> simp at hrecon; subst hrecon
+    simp only [EvalExpr.evalExpr, CryptoExpr.evalCS, NodeSemantics.evalOp, evalCryptoOpCS]
+    have h0 := hchildren 0 (by simp) (by simp [NodeOps.children, CryptoOp.children])
+    have h1 := hchildren 1 (by simp) (by simp [NodeOps.children, CryptoOp.children])
+    simp only [EvalExpr.evalExpr, NodeOps.children, CryptoOp.children,
+               List.getElem_cons_zero, List.getElem_cons_succ] at h0 h1
+    rw [h0, h1]
+  | iterate n b =>
+    simp only [reconstructCrypto] at hrecon
+    split at hrecon <;> simp at hrecon; subst hrecon
+    simp only [EvalExpr.evalExpr, CryptoExpr.evalCS, NodeSemantics.evalOp, evalCryptoOpCS]
+    have h0 := hchildren 0 (by simp) (by simp [NodeOps.children, CryptoOp.children])
+    simp only [EvalExpr.evalExpr, NodeOps.children, CryptoOp.children,
+               List.getElem_cons_zero] at h0
+    rw [h0]
+  | const val =>
+    simp only [reconstructCrypto] at hrecon
+    split at hrecon <;> simp at hrecon; subst hrecon
+    simp [EvalExpr.evalExpr, CryptoExpr.evalCS, NodeSemantics.evalOp, evalCryptoOpCS]
+  | spnBlock r s l =>
+    simp only [reconstructCrypto] at hrecon
+    split at hrecon <;> simp at hrecon; subst hrecon
+    simp only [EvalExpr.evalExpr, CryptoExpr.evalCS, NodeSemantics.evalOp, evalCryptoOpCS]
+    have h0 := hchildren 0 (by simp) (by simp [NodeOps.children, CryptoOp.children])
+    have h1 := hchildren 1 (by simp) (by simp [NodeOps.children, CryptoOp.children])
+    simp only [EvalExpr.evalExpr, NodeOps.children, CryptoOp.children,
+               List.getElem_cons_zero, List.getElem_cons_succ] at h0 h1
+    rw [h0, h1]
+  | feistelBlock r f =>
+    simp only [reconstructCrypto] at hrecon
+    split at hrecon <;> simp at hrecon; subst hrecon
+    simp only [EvalExpr.evalExpr, CryptoExpr.evalCS, NodeSemantics.evalOp, evalCryptoOpCS]
+    have h0 := hchildren 0 (by simp) (by simp [NodeOps.children, CryptoOp.children])
+    simp only [EvalExpr.evalExpr, NodeOps.children, CryptoOp.children,
+               List.getElem_cons_zero] at h0
+    rw [h0]
+  | spongeBlock rt cap p =>
+    simp only [reconstructCrypto] at hrecon
+    split at hrecon <;> simp at hrecon; subst hrecon
+    simp only [EvalExpr.evalExpr, CryptoExpr.evalCS, NodeSemantics.evalOp, evalCryptoOpCS]
+    have h0 := hchildren 0 (by simp) (by simp [NodeOps.children, CryptoOp.children])
+    simp only [EvalExpr.evalExpr, NodeOps.children, CryptoOp.children,
+               List.getElem_cons_zero] at h0
+    rw [h0]
+  | arxBlock r a rot x =>
+    simp only [reconstructCrypto] at hrecon
+    split at hrecon <;> simp at hrecon; subst hrecon
+    simp only [EvalExpr.evalExpr, CryptoExpr.evalCS, NodeSemantics.evalOp, evalCryptoOpCS]
+    have h0 := hchildren 0 (by simp) (by simp [NodeOps.children, CryptoOp.children])
+    have h1 := hchildren 1 (by simp) (by simp [NodeOps.children, CryptoOp.children])
+    have h2 := hchildren 2 (by simp) (by simp [NodeOps.children, CryptoOp.children])
+    simp only [EvalExpr.evalExpr, NodeOps.children, CryptoOp.children,
+               List.getElem_cons_zero, List.getElem_cons_succ] at h0 h1 h2
+    rw [h0, h1, h2]
+
+-- Smoke tests for CryptoSemantics evaluation
+#eval CryptoExpr.evalCS (.sbox 7 (.const 1)) (fun _ => default)
+-- Expected: {deg=7, δ=0, ε=0, BN=0, active=1, lat=1, gates=7}
+
+#eval CryptoExpr.evalCS (.compose (.sbox 7 (.const 1)) (.linear 5 (.const 1))) (fun _ => default)
+-- Expected: degree = 7*1 = 7, then compose multiplies degrees
 
 end SuperHash

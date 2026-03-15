@@ -231,21 +231,10 @@ structure AlmostUniversalFamily where
   /-- Non-degenerate range -/
   h_range_pos : rangeSize > 0
 
-/-- **Key length lower bound for e-AU families.**
-
-    For an e-AU family mapping M elements to N elements, the minimum key
-    length (in bits) satisfies: keyBits * logEpsilonInv >= logDomainRange,
-    where logDomainRange = log2(M/N) and logEpsilonInv = log2(1/e).
-
-    Scaled to Nat: if the key length is k bits,
-    then 2^k >= domainSize / rangeSize (modulo epsilon scaling).
-
-    (Stinson 1996, Theorem 3.2) -/
-theorem au_key_length_lower_bound
-    (keyBits logEpsilonInv logDomainRange : Nat)
-    (h_bound : keyBits * logEpsilonInv ≥ logDomainRange) :
-    logDomainRange ≤ keyBits * logEpsilonInv :=
-  h_bound
+-- Key length lower bound for e-AU families (Stinson 1996, Theorem 3.2):
+-- keyBits * logEpsilonInv >= logDomainRange.
+-- This is an assumption on the AU family parameters, verified concretely
+-- in the non-vacuity example (keyBits=10, logEpsilonInv=3, logDomainRange=28).
 
 -- ============================================================
 -- Section 8: Short-Output Collision Bound (Nguyen-Roscoe 2011)
