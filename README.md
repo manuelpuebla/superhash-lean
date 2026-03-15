@@ -1,4 +1,4 @@
-# SuperHash v3.3
+# SuperHash v4.0
 
 **Diseño automático de funciones hash criptográficas con garantías formales: E-graphs + pipeline verificado sobre CryptoSemantics + S-box certification pipeline + modelo de seguridad multi-propiedad + Pareto 6D + grafos expansores + ataques cuánticos.**
 
@@ -27,10 +27,10 @@ Cada componente respaldado por un teorema verificado en Lean 4. El **master theo
 
 | Métrica | Valor |
 |---------|-------|
-| Build jobs | 91 |
-| Archivos Lean | 88 |
-| LOC | ~23,600 |
-| Teoremas + examples | ~1,100 |
+| Build jobs | 110 |
+| Archivos Lean | 107 |
+| LOC | ~27,300 |
+| Teoremas + examples | ~1,350 |
 | Sorry | 0 |
 | Axiomas custom | 0 (solo `propext` + `Quot.sound`) |
 | Rewrite rules (Nat) | 15 (5 simplification + 10 expansion) |
@@ -235,6 +235,7 @@ Saturation non-vacuity:    6→17 nodes with 3 rules (native_decide verified)
 | v3.2 | **pipeline_soundness_crypto** + autopsy fixes (2C + 3H + 2M) | ✓ Complete |
 | v3.3 | TrustHash S-box pipeline + quantum bounds + division property + 4D threat lattice + Pareto 6D | ✓ Complete |
 | v3.3.1 | Autopsy fixes: formula reconciliation + honest naming + dead code removal + documentation | ✓ Complete |
+| v4.0 | Graph infrastructure + TreewidthDP + ILP extraction + LLM-ready Python orchestrator | ✓ Complete |
 
 ## Work in progress
 
@@ -271,4 +272,4 @@ Connect Python orchestrator (AXLE, RLVF) with the verified Lean pipeline.
 ---
 
 *Código fuente:* [github.com/manuelpuebla/superhash-lean](https://github.com/manuelpuebla/superhash-lean)
-*91 build jobs · ~1,100 teoremas · 0 sorry · S-box pipeline · Pareto 6D · quantum bounds · Lean 4.28.0*
+*110 build jobs · ~1,350 teoremas · 0 sorry · ILP extraction · TreewidthDP · LLM-ready · Lean 4.28.0*

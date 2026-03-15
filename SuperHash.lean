@@ -91,3 +91,25 @@ import SuperHash.Pareto.ExtendedDominance
 import SuperHash.Pareto.ExtendedExtract
 import SuperHash.Pareto.PipelineBridge
 import SuperHash.Sbox.SboxParetoBridge
+-- v4.0 Phase 3: ILP extraction infrastructure
+import SuperHash.Pipeline.ILP
+import SuperHash.Pipeline.ILPEncode
+import SuperHash.Pipeline.ILPCheck
+import SuperHash.Pipeline.ILPSpec
+import SuperHash.Pipeline.ExtractionStrategy
+import SuperHash.Pipeline.ILPInstances
+-- v4.0 Phase 1: Graph infrastructure (from TrustHash)
+import SuperHash.Graph.SimpleGraph
+import SuperHash.Graph.EliminationOrder
+import SuperHash.Graph.TreeDecomp
+import SuperHash.Graph.NiceTreeConvert
+import SuperHash.Graph.ConstraintGraph
+import SuperHash.Graph.TWBridge
+-- v4.0 Phase 2: DP pipeline (from TrustHash)
+import SuperHash.Graph.Util.NatOpt
+import SuperHash.Graph.Util.FoldMin
+import SuperHash.Graph.Util.InsertMin
+import SuperHash.Graph.TreewidthDP
+import SuperHash.Graph.DPCompose
+import SuperHash.Graph.DPOptimal
+import SuperHash.Graph.CryptoCost
