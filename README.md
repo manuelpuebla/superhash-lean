@@ -1,6 +1,6 @@
-# SuperHash v3.0
+# SuperHash v3.1
 
-**Diseño automático de funciones hash criptográficas con garantías formales: E-graphs + semántica criptográfica verificada + exploración bidireccional + fundamentos information-theoretic.**
+**Diseño automático de funciones hash criptográficas con garantías formales: E-graphs + semántica criptográfica verificada + exploración bidireccional + fundamentos information-theoretic + modelo de seguridad multi-propiedad (Rogaway-Shrimpton).**
 
 ## Qué es
 
@@ -26,10 +26,10 @@ Cada componente respaldado por un teorema verificado en Lean 4.
 
 | Métrica | Valor |
 |---------|-------|
-| Build jobs | 62 |
-| Archivos Lean | 62 |
-| LOC | ~17,500 |
-| Teoremas + examples | ~720 |
+| Build jobs | 64 |
+| Archivos Lean | 66 |
+| LOC | ~18,500 |
+| Teoremas + examples | ~800 |
 | Sorry | 0 |
 | Axiomas custom | 0 (solo `propext` + `Quot.sound`) |
 | Rewrite rules | 15 (5 simplification + 10 expansion) |
@@ -79,6 +79,8 @@ SuperHash/
 │   ├── ZKSideInfo.lean         -- zkSecurity = base - transcript
 │   ├── AESSbox.lean            -- Full 256-entry AES S-box (δ=4, native_decide)
 │   ├── CryptoNodeSemantics.lean -- NodeSemantics CryptoOp CryptoSemantics instance
+│   ├── SecurityNotions.lean    -- v3.1: Rogaway-Shrimpton + UOWHF + MPP + bridges
+│   ├── ExpanderBounds.lean     -- v3.1: Expander + LP + DBL + ZesT + post-quantum
 │   ├── BouraCanteutBound.lean  -- 58 thms: BCD11, BC13, iterated bounds
 │   ├── HigherOrderDiff.lean    -- 44 thms: derivative vanishing, zero-sum
 │   └── LinearLayerDegree.lean  -- 67 thms: SPN phase analysis, R_exp transition
@@ -130,6 +132,29 @@ theorem pipeline_soundness :
 - `parallelIdentity`: `min(branchNumber, 0) = 0 ≠ branchNumber`
 - `roundCompose`: compose multiplies degrees, round adds them
 
+### v3.1: Multi-property security model (24 UHF papers)
+**SecurityProfile** with 4 dimensions (Rogaway-Shrimpton 2004):
+- `collisionBits`: Coll — find any x≠x' with h(x)=h(x')
+- `preImageBits`: Pre — given y, find x with h(x)=y
+- `secondPreImageBits`: Sec — given x, find x'≠x with h(x)=h(x')
+- `targetCRBits`: eSec — target collision resistance
+
+**Proven implications**: `Coll → Sec`, `Coll → eSec`, `Pre ⊥ Coll` (independent).
+
+**UHF theory** (Carter-Wegman 1979 + extensions):
+- Carter-Wegman H₁ family: `collision * m ≤ p²` for prime p ≥ m
+- ε-AU key length bound: `keyBits * (rangeSize - 1) ≥ (domainSize - 1) * epsilon`
+- Short-output: `collision_prob ≤ 2/2^b` for b-bit truncation
+- Composition: `ε₁ + ε₂` bound for composed families
+
+**Expander graph bounds** (Charles-Goren-Lauter, Petit, Zhupa-Polak):
+- Mixing lemma: `deviation² ≤ λ₂² · |S| · |T|`
+- LP compression: LP231 (50%), LP352 (55%), LP362 (63%) of birthday
+- DBL: 2× security improvement over single-block
+- ZesT: collision security ≥ groupOrderBits/2 (provable, non-malleable)
+- Post-quantum: `quantumBits * 2 ≥ classicalBits` (Grover bound)
+- Branch ↔ spectral bridge: connects SPN wide-trail to graph expansion
+
 ### Concrete verifications
 ```
 AES-128 fitness:           min(64, 150, 140) = 64 bits (birthday-bounded)
@@ -153,6 +178,7 @@ AES satisfies 2-UHF:       4 · 2^6 = 256 = 2^8 ✓ (for 6-bit output)
 | v2.9 | Equality saturation ACTIVE + TrustHash DP verdict | ✓ Complete |
 | v2.9.1 | Autopsy fixes (6 findings: 3 CRITICAL + 2 HIGH + 1 MEDIUM) | ✓ Complete |
 | v3.0 | Bidirectional exploration: 3 CS-proven rules + 10 expansion rules + active saturation | ✓ Complete |
+| v3.1 | UHF integration: SecurityProfile + Carter-Wegman + ε-AU + expander bounds + LP/DBL + post-quantum | ✓ Complete |
 
 ## Work in progress
 
@@ -191,4 +217,4 @@ AES satisfies 2-UHF:       4 · 2^6 = 256 = 2^8 ✓ (for 6-bit output)
 ---
 
 *Código fuente:* [github.com/manuelpuebla/superhash-lean](https://github.com/manuelpuebla/superhash-lean)
-*62 build jobs · ~720 teoremas · 0 sorry · 15 rewrite rules · Lean 4.28.0*
+*64 build jobs · ~800 teoremas · 0 sorry · 15 rewrite rules · Lean 4.28.0*

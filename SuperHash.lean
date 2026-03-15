@@ -51,6 +51,7 @@ import SuperHash.Crypto.ZKSideInfo
 import SuperHash.Crypto.AESSbox
 import SuperHash.Crypto.CryptoNodeSemantics
 import SuperHash.Crypto.BouraCanteutBound
+import SuperHash.Crypto.SecurityNotions
 import SuperHash.Crypto.HigherOrderDiff
 import SuperHash.Crypto.LinearLayerDegree
 import SuperHash.Pipeline.CompletenessSpec
@@ -59,3 +60,4 @@ import SuperHash.TrustHash.NiceTree
 import SuperHash.TrustHash.Verdict
 import SuperHash.Rules.CryptoRulesCS
 import SuperHash.Rules.ExpansionRules
+import SuperHash.Crypto.ExpanderBounds
