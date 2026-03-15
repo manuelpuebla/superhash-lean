@@ -9,7 +9,7 @@ how many chosen plaintexts are needed to mount an integral attack.
 
 ## Key definitions
 - `integralDistinguisherCost`: attacker cost = outputBits - remaining weight
-- `integralRoundsNeeded`: conservative bound on rounds to neutralize div property
+- `integralRoundsNeeded_conservative`: worst-case bound on rounds to neutralize div property
 - `divPropertyAfterRounds`: remaining weight after r rounds of S-box propagation
 
 ## Cost model (Todo 2015, §6)
@@ -45,12 +45,15 @@ open SuperHash.Security.DivisionProperty.Propagation
 def integralDistinguisherCost (outputBits maxDivWeight : Nat) : Nat :=
   outputBits - maxDivWeight
 
-/-- **Rounds needed to neutralize division property** (conservative bound).
-    inputBits rounds always suffice because each round with degree ≥ 2
-    and weight ≥ 2 strictly decreases the weight, and once weight ≤ 1,
-    it remains ≤ 1. In practice, far fewer rounds are needed (O(log n)).
-    (Xiang et al. 2016, §4.2: round complexity analysis) -/
-def integralRoundsNeeded (inputBits _sboxDeg : Nat) : Nat :=
+/-- **Conservative upper bound on rounds to neutralize division property.**
+    Returns `inputBits` as a worst-case bound: inputBits rounds always suffice
+    because each round with degree >= 2 and weight >= 2 strictly decreases
+    the weight, and once weight <= 1, it remains <= 1.
+    In practice, far fewer rounds are needed (O(log_d(n)) where d is the
+    S-box degree). See `present_6_rounds_kill` and `aes_4_rounds_kill` for
+    concrete (much tighter) bounds.
+    (Xiang et al. 2016, S4.2: round complexity analysis) -/
+def integralRoundsNeeded_conservative (inputBits : Nat) : Nat :=
   inputBits
 
 /-- **Remaining division weight after r rounds**: iterates S-box propagation
@@ -157,14 +160,22 @@ theorem zero_weight_absorbing (d : Nat) (hd : d ≥ 1) :
   rw [if_neg hd0]
   simp; omega
 
-/-- **Full rounds cost: if all r rounds of the cipher are used,
-    the cost is outputBits - remaining weight after r rounds.
-    When the cipher has enough rounds, this is ≥ outputBits - 1.
-    (Todo 2015, §6) -/
-theorem full_rounds_cost (outputBits inputBits sboxDeg rounds : Nat) :
-    integralDistinguisherCost outputBits
-      (divPropertyAfterRounds inputBits sboxDeg rounds) ≤ outputBits := by
-  exact integral_cost_le_output _ _
+/-- **Full rounds cost when division property is neutralized.**
+    When enough rounds have been applied to reduce the division property
+    weight to <= 1, the integral distinguisher cost is at least
+    outputBits - 1 (i.e., the attack gains at most 1 bit of advantage).
+    This is the meaningful bound: it combines `sufficient_rounds_kill_div_property`
+    with `neutralized_weight_max_cost` into a single usable statement.
+    (Todo 2015, S6: integral attack complexity after sufficient rounds) -/
+theorem full_rounds_cost (outputBits inputBits sboxDeg : Nat)
+    (hd : sboxDeg ≥ 1) (hn : outputBits ≥ 1) (r : Nat)
+    (hkill : divPropertyAfterRounds inputBits sboxDeg r ≤ 1) :
+    ∀ extra : Nat,
+      integralDistinguisherCost outputBits
+        (divPropertyAfterRounds inputBits sboxDeg (r + extra)) ≥ outputBits - 1 := by
+  intro extra
+  exact neutralized_weight_max_cost outputBits _ (sufficient_rounds_kill_div_property
+    inputBits sboxDeg hd r extra hkill) hn
 
 -- ============================================================
 -- Section 5: Concrete instances

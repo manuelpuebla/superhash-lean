@@ -234,6 +234,7 @@ Saturation non-vacuity:    6→17 nodes with 3 rules (native_decide verified)
 | v3.1 | UHF integration: SecurityProfile + Carter-Wegman + expander bounds | ✓ Complete |
 | v3.2 | **pipeline_soundness_crypto** + autopsy fixes (2C + 3H + 2M) | ✓ Complete |
 | v3.3 | TrustHash S-box pipeline + quantum bounds + division property + 4D threat lattice + Pareto 6D | ✓ Complete |
+| v3.3.1 | Autopsy fixes: formula reconciliation + honest naming + dead code removal + documentation | ✓ Complete |
 
 ## Work in progress
 

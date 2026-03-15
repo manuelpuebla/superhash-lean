@@ -223,4 +223,46 @@ theorem liftRules_length (rules : List RewriteRule) :
     (liftRules rules).length = rules.length := by
   unfold liftRules; simp [List.length_map]
 
+-- ============================================================
+-- Section 9: Connection to CryptoOp (documentation)
+-- ============================================================
+
+/-! ### Intended bridge to CryptoOp
+
+`AlgExpr` and `ConditionalRewriteRule` operate over a generic algebraic
+expression AST with 5 constructors (const, var, add, mul, pow). The
+SuperHash E-graph uses `CryptoOp` with 12 constructors (sbox, linear,
+xor, round, compose, parallel, iterate, const, spnBlock, feistelBlock,
+spongeBlock, arxBlock).
+
+**Why no `cryptoOpToAlgExpr` function exists here**: the mapping from
+CryptoOp to AlgExpr is domain-specific and lossy. CryptoOp encodes
+structural composition (compose, parallel, iterate) and cryptographic
+primitives (sbox, linear, round, etc.) that have no natural algebraic
+analog. The meaningful connection is:
+
+1. **Algebraic degree**: CryptoOp's `sbox d child` has algebraic degree
+   `d`, which maps to `AlgExpr.pow (AlgExpr.var 0) d`. This is used by
+   `SecurityNotions.algebraicBitsOf` (via `ilog2(cs.algebraicDegree)`).
+
+2. **Round composition**: `iterate n (sbox d _)` has total algebraic
+   degree `d^n`, which maps to `AlgExpr.pow (AlgExpr.var 0) (d^n)`.
+
+3. **Conditional rules**: the `sideCond` field of `ConditionalRewriteRule`
+   is designed for conditions like "active S-box count > threshold" or
+   "algebraic degree < bound", which are computed from CryptoSemantics
+   fields (not from AlgExpr structure).
+
+The connection is INDIRECT: CryptoOp -> CryptoSemantics (via evalCryptoOpSem)
+-> SecurityProfile (via cryptoSemanticsToProfile) -> security bits that
+can be expressed as AlgExpr for simplification/verification.
+
+A direct `cryptoOpToAlgExpr` would require choosing a single AlgExpr
+representation for multi-dimensional CryptoOp nodes (e.g., sbox has both
+algebraic degree AND differential uniformity), which would lose information.
+The current architecture keeps these concerns separate:
+- CryptoOp + CryptoSemantics: full multi-dimensional crypto analysis
+- AlgExpr + ConditionalRewriteRule: algebraic simplification/verification
+-/
+
 end SuperHash.Security.ConditionalRewriteRule

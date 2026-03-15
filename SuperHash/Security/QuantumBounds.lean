@@ -1,17 +1,31 @@
 /-!
-# SuperHash.Security.QuantumBounds — Quantum security bounds
+# SuperHash.Security.QuantumBounds — Nat floor division bounds modeling quantum attack exponents
 
 ## Scope
-Formalizes Grover and BHT quantum attack bounds as additions to the
-generic floor. Quantum attacks reduce collision/preimage bounds by
-specific factors:
-- Grover: preimage search 2^n -> 2^{n/2} quantum operations
-- BHT (Brassard-Hoyer-Tapp): collision search 2^{n/2} -> 2^{n/3}
+Provides Nat floor division bounds that MODEL the exponents of quantum
+query complexity (Grover, BHT). These are NOT proofs of quantum complexity
+theory — they are verified arithmetic over natural numbers that captures
+the floor-division relationships between classical and quantum security
+parameters.
 
-## Application
-- `quantumGenericFloor` replaces classical `genericFloor` in quantum formula
-- `bht_le_classical` proves quantum collision bound <= classical
-- `quantum_floor_le_classical` proves quantum floor <= classical floor
+Specifically:
+- `groverPreimageFloor n = n / 2` models the exponent reduction from
+  Grover's algorithm (preimage: 2^n -> 2^{n/2} quantum queries)
+- `bhtCollisionFloor n = n / 3` models the exponent reduction from
+  BHT (collision: 2^{n/2} -> 2^{n/3} quantum queries)
+- The theorems prove arithmetic relationships between these floor values
+  (e.g., n/3 <= n/2, monotonicity, gap bounds)
+
+## What these theorems prove
+- Nat division inequalities: `n/3 <= n/2`, `n/3 <= n`, etc.
+- Monotonicity: wider output -> higher quantum floor
+- Gap bound: classical floor - quantum floor <= n/6 + 1
+- Concrete evaluations: e.g., 128/3 = 42 for AES-128
+
+## What these theorems do NOT prove
+- Quantum query complexity lower bounds (require quantum information theory)
+- Optimality of Grover/BHT algorithms
+- Security of specific hash functions against quantum adversaries
 
 ## References
 - Grover, "A fast quantum mechanical algorithm for database search" (1996)
@@ -93,11 +107,11 @@ theorem quantum_floor_pos (n : Nat) (hn : n ≥ 3) :
   simp only [quantumGenericFloor, groverPreimageFloor, bhtCollisionFloor]
   omega
 
-/-- **BHT is the binding floor for collision.**
-    n/3 <= n/2, so BHT determines the quantum collision security.
-    The quantumGenericFloor equals bhtCollisionFloor.
-    (BHT 1998) -/
-theorem quantum_collision_binding (n : Nat) :
+/-- **Nat arithmetic: min(n/2, n/3) = n/3.**
+    Since n/3 <= n/2 for all n (Nat floor division), the minimum
+    of the two Grover/BHT floor values equals the BHT floor.
+    This is a pure Nat division fact, not a quantum complexity proof. -/
+theorem quantum_floor_eq_bht_collision (n : Nat) :
     quantumGenericFloor n = bhtCollisionFloor n := by
   simp only [quantumGenericFloor, groverPreimageFloor, bhtCollisionFloor]
   omega
@@ -150,12 +164,12 @@ theorem gmimc128_quantum_floor :
 -- Section 4: Quantum rewrite rules
 -- ============================================================
 
-/-- **Quantum floor reduces to BHT for collision resistance.**
-    Rewrite rule for E-graph: quantumGenericFloor = bhtCollisionFloor.
-    (Used by equality saturation optimizer) -/
+/-- **Nat arithmetic (E-graph rewrite form): quantumGenericFloor = bhtCollisionFloor.**
+    Alias of `quantum_floor_eq_bht_collision` for use as an E-graph rewrite rule.
+    Both sides compute to n/3. -/
 theorem quantum_floor_eq_bht (n : Nat) :
     quantumGenericFloor n = bhtCollisionFloor n :=
-  quantum_collision_binding n
+  quantum_floor_eq_bht_collision n
 
 /-- **Classical to quantum reduction factor.**
     classicalFloor n <= 2 * quantumGenericFloor n + 1.

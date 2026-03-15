@@ -43,10 +43,17 @@ def sboxDiffEntropy (sa : SboxAnalysis) : Nat :=
   if ilog2 sa.diffUniformity ≥ sa.inputBits then 0
   else sa.inputBits - ilog2 sa.diffUniformity
 
-/-- **Compute algebraic security bits from S-box analysis.**
-    algebraicBits = ilog2(algebraicDeg^rounds) = rounds * ilog2(algebraicDeg).
-    This uses the fact that for GF(2^n) polynomials, the algebraic degree
-    of a composition of r rounds is at most deg^r. -/
+/-- **Compute algebraic security bits from per-round S-box analysis.**
+    algebraicBits = rounds * ilog2(algebraicDeg).
+
+    **Relation to PipelineBridge**: `PipelineBridge.cryptoSemanticsToExtended`
+    uses `ilog2(cs.algebraicDegree)` where `cs.algebraicDegree` is the TOTAL
+    composed degree (= sboxDeg^rounds). That formula computes `ilog2(d^r)`.
+    This formula computes `r * ilog2(d)`, which is an UPPER BOUND on
+    `ilog2(d^r)` (by concavity of log). The two coincide when `d` is a
+    power of 2 (e.g., AES degree 7 → both give the same result for
+    practical parameters). This function is used when we have per-S-box
+    analysis (SboxAnalysis) but not the pre-composed CryptoSemantics. -/
 def sboxAlgBits (sa : SboxAnalysis) (rounds : Nat) : Nat :=
   rounds * ilog2 sa.algebraicDeg
 

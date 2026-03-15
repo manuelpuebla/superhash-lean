@@ -134,7 +134,19 @@ def checkLowerBound (sbox : SboxTable) (target : Nat) : Bool :=
 
 /-- Decomposed certificate checker for large S-boxes.
     Verifies that maxDelta is both an upper bound on all rows
-    AND is achieved by at least one row. -/
+    AND is achieved by at least one row.
+
+    **Relation to `checkDDT`**: This is a CONCRETE-ONLY verification helper
+    that avoids computing `diffUniformityFromTable` (which scans the full DDT
+    matrix). Instead, it checks upper and lower bounds separately, which is
+    more efficient for large S-boxes (8-bit and above).
+
+    For general soundness proofs, use `checkDDT` + `checkDDT_sound`.
+    `checkDDTDecomp` does NOT have a general soundness theorem linking it
+    to `checkDDT` because the decomposed check verifies a slightly different
+    property (tight upper+lower bound vs exact equality with
+    `diffUniformityFromTable`). Both are valid for concrete S-box validation
+    — see `present_decomp_valid` and `toy2_decomp_valid` for examples. -/
 def checkDDTDecomp (cert : DDTCertificate) (sbox : SboxTable) : Bool :=
   cert.inputBits == sbox.inputBits &&
   checkUpperBound sbox cert.maxDelta &&
