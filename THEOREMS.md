@@ -1,15 +1,10 @@
 ═══ Specification Audit: superhash_lean ═══
-Theorems: 1120  Lemmas: 0  Pipeline: 78
-Clean: 997  T1(vacuity): 1  T1.5(identity): 0  T2(weak): 10  T3(structural): 18  T4(no-witness): 94
-
-── TIER 1 — VACUITY (1 issues) ──
-  theorem zest_parallel_speedup
-    SuperHash/Crypto/ExpanderBounds.lean:296
-    ⚠ T1-UNUSED-ALL: all 1 parameters are _-prefixed — likely a stub or vacuous proof
+Theorems: 1140  Lemmas: 0  Pipeline: 77
+Clean: 1020  T1(vacuity): 0  T1.5(identity): 0  T2(weak): 10  T3(structural): 15  T4(no-witness): 95
 
 ── TIER 2 — WEAK SPECS (10 issues) ──
   theorem evalOp_ext_as
-    SuperHash/Attack/AttackNodeSemantics.lean:143
+    SuperHash/Attack/AttackNodeSemantics.lean:185
     ⚠ T2-UNUSED-PARTIAL: 1/3 params are _-prefixed: ['_env']
 
   theorem empty_bni_attack
@@ -17,7 +12,7 @@ Clean: 997  T1(vacuity): 1  T1.5(identity): 0  T2(weak): 10  T3(structural): 18 
     ⚠ T2-EXISTENTIAL-ONLY: conclusion is existential without equality/equivalence — may not reach concrete evaluation
 
   theorem evalOp_ext_cs
-    SuperHash/Crypto/CryptoNodeSemantics.lean:154
+    SuperHash/Crypto/CryptoNodeSemantics.lean:171
     ⚠ T2-UNUSED-PARTIAL: 1/3 params are _-prefixed: ['_env']
 
   theorem round_reduce_safe
@@ -48,7 +43,7 @@ Clean: 997  T1(vacuity): 1  T1.5(identity): 0  T2(weak): 10  T3(structural): 18 
     SuperHash/Pipeline/MasterTheoremV2.lean:41
     ⚠ T2-EXISTENTIAL-ONLY: conclusion is existential without equality/equivalence — may not reach concrete evaluation
 
-── TIER 3 — STRUCTURAL (18 issues) ──
+── TIER 3 — STRUCTURAL (15 issues) ──
   theorem attack_extractF_correct [PIPELINE]
     SuperHash/Attack/AttackPipeline.lean:62
     ⚠ T3-MANY-HYPOTHESES: 11 hypotheses on pipeline theorem — verify each is satisfiable and necessary
@@ -69,18 +64,6 @@ Clean: 997  T1(vacuity): 1  T1.5(identity): 0  T2(weak): 10  T3(structural): 18 
 
   theorem bridge_is_ideal_bounded [PIPELINE]
     SuperHash/Crypto/SecurityNotions.lean:358
-    ⚠ T3-DIRECTION: name suggests equivalence but conclusion is unidirectional (→ not ↔)
-
-  theorem bridge_collision_le_diff [PIPELINE]
-    SuperHash/Crypto/SecurityNotions.lean:375
-    ⚠ T3-DIRECTION: name suggests equivalence but conclusion is unidirectional (→ not ↔)
-
-  theorem bridge_collision_le_alg [PIPELINE]
-    SuperHash/Crypto/SecurityNotions.lean:382
-    ⚠ T3-DIRECTION: name suggests equivalence but conclusion is unidirectional (→ not ↔)
-
-  theorem bridge_collision_le_birthday [PIPELINE]
-    SuperHash/Crypto/SecurityNotions.lean:389
     ⚠ T3-DIRECTION: name suggests equivalence but conclusion is unidirectional (→ not ↔)
 
   theorem ilp_extraction_soundness_crypto [PIPELINE]
@@ -123,7 +106,7 @@ Clean: 997  T1(vacuity): 1  T1.5(identity): 0  T2(weak): 10  T3(structural): 18 
     SuperHash/Rules/SoundRule.lean:87
     ⚠ T3-NAME-MISMATCH: name contains 'sound' but conclusion has no equality, biconditional, or implication
 
-── TIER 4 — NO WITNESS (94 issues) ──
+── TIER 4 — NO WITNESS (95 issues) ──
   theorem add_node_triple
     SuperHash/EGraph/AddNodeTriple.lean:17
     ⚠ T4-NO-WITNESS: 5 Prop hypotheses but no non-vacuity example found in Tests/NonVacuity*.lean or same file
@@ -185,8 +168,12 @@ Clean: 997  T1(vacuity): 1  T1.5(identity): 0  T2(weak): 10  T3(structural): 18 
     ⚠ T4-NO-WITNESS: 7 Prop hypotheses but no non-vacuity example found in Tests/NonVacuity*.lean or same file
 
   theorem consistent_valuation_unique_acyclic
-    SuperHash/EGraph/Consistency.lean:1489
+    SuperHash/EGraph/Consistency.lean:1494
     ⚠ T4-NO-WITNESS: 7 Prop hypotheses but no non-vacuity example found in Tests/NonVacuity*.lean or same file
+
+  theorem acyclic_add_only
+    SuperHash/EGraph/Consistency.lean:1568
+    ⚠ T4-NO-WITNESS: 3 Prop hypotheses but no non-vacuity example found in Tests/NonVacuity*.lean or same file
 
   theorem IsRootAt_of_rootD_self
     SuperHash/EGraph/CoreSpec.lean:229

@@ -1,4 +1,4 @@
-# SuperHash v4.0
+# SuperHash v4.5
 
 **Diseño automático de funciones hash criptográficas con garantías formales: E-graphs + pipeline verificado sobre CryptoSemantics + S-box certification pipeline + modelo de seguridad multi-propiedad + Pareto 6D + grafos expansores + ataques cuánticos.**
 
@@ -8,7 +8,7 @@ SuperHash formaliza en Lean 4 un framework para el diseño automático de funcio
 
 El sistema opera en cinco niveles:
 1. **E-graph engine** (v1.0): motor verificado de saturation + extraction + Pareto
-2. **CryptoSemantics** (v2.5): evaluación con métricas criptográficas reales (7 campos: grado algebraico, δ, ε, branch number, S-boxes activas, latencia, gates)
+2. **CryptoSemantics** (v2.5): evaluación con métricas criptográficas reales (8 campos: grado algebraico, δ, ε, branch number, S-boxes activas, latencia, gates, circuitDepth)
 3. **Information-theoretic bounds** (v2.6): cotas de seguridad respaldadas por el Leftover Hash Lemma (Tyagi-Watanabe 2023) y análisis de side-information ZK
 4. **Bidirectional exploration** (v3.0): 15+ reglas de reescritura (simplificación + expansión + bridges) con exploración bidireccional del espacio de diseños
 5. **CryptoSemantics pipeline** (v3.2): master theorem `pipeline_soundness_crypto` — el pipeline completo (saturación → extracción → Pareto) es **semánticamente correcto** para las 7 métricas criptográficas simultáneamente
@@ -105,7 +105,7 @@ SuperHash/
 │   ├── MasterTheorem.lean      -- pipeline_soundness (Nat, 3-part)
 │   └── MasterTheoremCS.lean    -- pipeline_soundness_crypto (CryptoSemantics, 3-part)
 ├── Crypto/                     -- Semántica criptográfica real
-│   ├── Semantics.lean          -- CryptoSemantics (7 campos)
+│   ├── Semantics.lean          -- CryptoSemantics (8 campos)
 │   ├── CryptoEval.lean         -- evalCryptoSem, safePow
 │   ├── CryptoNodeSemantics.lean -- NodeSemantics CryptoOp CryptoSemantics instance
 │   ├── SecurityNotions.lean    -- SecurityProfile (Rogaway-Shrimpton) + UOWHF + MPP
@@ -152,7 +152,7 @@ theorem pipeline_soundness_crypto :
   ∧ output.length ≤ weights.length
 ```
 
-Esto garantiza que **todo diseño hash extraído** del E-graph después de saturación preserva los 7 campos de CryptoSemantics: algebraicDegree, differentialUniformity, linearBias, branchNumber, activeMinSboxes, latency, gateCount.
+Esto garantiza que **todo diseño hash extraído** del E-graph después de saturación preserva los 8 campos de CryptoSemantics: algebraicDegree, differentialUniformity, linearBias, branchNumber, activeMinSboxes, latency, gateCount, circuitDepth.
 
 ### v1.0: Pipeline soundness (Nat)
 ```
