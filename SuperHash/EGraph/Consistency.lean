@@ -1485,7 +1485,12 @@ theorem consistent_valuation_step (g : EGraph Op) (env : Nat → Val)
     - `ChildrenBounded` (for boundedness of children in `consistent_valuation_step`)
     - `AcyclicClassDAG` (ranking function with strict decrease on children)
     - All classes are non-empty (have at least one node)
-    - Roots of children of nodes in classes have class entries (structural closure) -/
+    - Roots of children of nodes in classes have class entries (structural closure).
+      **Note (v4.5.3)**: `hchildren_classes` does NOT follow from `PostMergeInvariant` alone.
+      PMI gives `child < parent.size` but not `∃ ec, classes.get? (root child) = some ec`.
+      For add-only e-graphs this holds because `add` creates class entries.
+      For e-graphs with merges, this holds because merges don't delete entries.
+      Use `acyclic_add_only` below for the common add-only case. -/
 theorem consistent_valuation_unique_acyclic (g : EGraph Op) (env : Nat → Val)
     (v1 v2 : EClassId → Val)
     (hcv1 : ConsistentValuation g env v1) (hcv2 : ConsistentValuation g env v2)
@@ -1549,5 +1554,25 @@ theorem consistent_valuation_unique_acyclic (g : EGraph Op) (env : Nat → Val)
       exact ih (root g.unionFind child) ec' (by omega) hget'
     exact consistent_valuation_step g env v1 v2 hcv1 hcv2 hwf cid ec hget node hnode
       hcb_node h_children
+
+-- ══════════════════════════════════════════════════════════════════
+-- v4.5.3: AcyclicClassDAG instantiation for add-only e-graphs
+-- ══════════════════════════════════════════════════════════════════
+
+/-- **Add-only e-graphs are acyclic.**
+    For e-graphs built by `EGraph.empty` + sequence of `add` (no merges):
+    - `rank = classId` works because `UnionFind.add` assigns `newId = parent.size`
+    - Without merges, `root child = child` (every ID is its own root)
+    - Children always have smaller IDs (they were added before the parent)
+    So `rank(root child) = child < classId = rank rootId`. -/
+theorem acyclic_add_only (g : EGraph Op)
+    (h_roots_id : ∀ id, id < g.unionFind.parent.size → root g.unionFind id = id)
+    (hcb : ChildrenBounded g)
+    (h_children_lt : ∀ id ec, g.classes.get? id = some ec →
+      ∀ nd, nd ∈ ec.nodes.toList → ∀ c, c ∈ nd.children → c < id) :
+    AcyclicClassDAG g :=
+  ⟨id, fun rootId ec hget nd hnd c hc => by
+    rw [h_roots_id c (hcb rootId ec hget nd hnd c hc)]
+    exact h_children_lt rootId ec hget nd hnd c hc⟩
 
 end SuperHash

@@ -124,7 +124,16 @@ theorem designLoop_master (state : DesignLoopState)
 -- ============================================================
 
 /-- Corollary: for PatternSoundRule-based cryptoPatternRules, PreservesCV is automatically
-    discharged via patternSoundRules_preserveCV. Only expansionRules need explicit hypothesis. -/
+    discharged via patternSoundRules_preserveCV. Only expansionRules need explicit hypothesis.
+
+    **Trust boundary (v4.5.3)**: `h_expansion_cv` is a specification constraint, not a gap.
+    The 10 expansion rules are `RewriteRule CryptoOp` (not `PatternSoundRule`) and include
+    `roundSplitRule` which is a design exploration transform (splits `iterate(n, body)` into
+    `compose(iterate(n/2, body), iterate(n-n/2, body))`), NOT a semantic equivalence.
+    Proving PreservesCV for expansion rules would require individual soundness proofs that
+    don't exist by design — expansion rules explore the design space, while the verified
+    pipeline guarantees that only CV-preserving applications are kept. The trust boundary
+    is between the verified pipeline infrastructure and the rule selection policy. -/
 theorem designLoop_master_with_pattern_rules (state : DesignLoopState)
     (h_pool_sound : ∀ vr ∈ state.pool.rules, ∀ env : Nat → Nat,
       vr.candidate.lhsTemplate.eval env = vr.candidate.rhsTemplate.eval env)

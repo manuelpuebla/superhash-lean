@@ -293,7 +293,7 @@ theorem zest_security_mono (bits1 bits2 : Nat) (h : bits1 ≤ bits2) :
 
 /-- ZesT is parallelizable: independent blocks processed concurrently.
     With p processors, time reduces by factor p. -/
-theorem zest_parallel_speedup (totalSteps processors : Nat) (_hp : processors > 0) :
+theorem zest_parallel_speedup (totalSteps processors : Nat) (hp : processors > 0) :
     totalSteps / processors ≤ totalSteps := Nat.div_le_self totalSteps processors
 
 /-- **ZesT security bound for SuperHash design space.**

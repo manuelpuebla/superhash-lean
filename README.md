@@ -27,10 +27,10 @@ Cada componente respaldado por un teorema verificado en Lean 4. El **master theo
 
 | Métrica | Valor |
 |---------|-------|
-| Build jobs | 110 |
-| Archivos Lean | 107 |
-| LOC | ~27,300 |
-| Teoremas + examples | ~1,350 |
+| Build jobs | 122 |
+| Archivos Lean | 124 |
+| LOC | ~23,400 |
+| Teoremas + examples | ~1,278 |
 | Sorry | 0 |
 | Axiomas custom | 0 (solo `propext` + `Quot.sound`) |
 | Rewrite rules (Nat) | 15 (5 simplification + 10 expansion) |
@@ -272,4 +272,4 @@ Connect Python orchestrator (AXLE, RLVF) with the verified Lean pipeline.
 ---
 
 *Código fuente:* [github.com/manuelpuebla/superhash-lean](https://github.com/manuelpuebla/superhash-lean)
-*110 build jobs · ~1,350 teoremas · 0 sorry · ILP extraction · TreewidthDP · LLM-ready · Lean 4.28.0*
+*122 build jobs · ~1,278 teoremas · 0 sorry · ILP extraction · TreewidthDP · LLM-ready · Lean 4.28.0*
