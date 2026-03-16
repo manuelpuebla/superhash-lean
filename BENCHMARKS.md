@@ -14,7 +14,7 @@ This document defines **exhaustive verification criteria** for SuperHash v1.0, a
 **Project Context:**
 - **Domain:** Lean 4 without Mathlib
 - **Architecture:** 6 phases, 24 nodes
-- **Node Types:** FUNDACIONAL, CRÍTICO, PARALELO, HOJA
+- **Node Types:** FOUNDATIONAL, CRITICAL, PARALLEL, LEAF
 - **Objective:** Zero-sorry, axiom-free, compositional soundness from primitives to end-to-end pipeline
 
 ---
@@ -29,7 +29,7 @@ These checks apply to **every phase** and **every commit** before closing any bl
 | **M-2** | **Axiom-Free** | No custom axioms introduced (verify with `#print axioms` on all theorems) |
 | **M-3** | **Clean Build** | `lake build` completes without errors or warnings |
 | **M-4** | **Termination Proofs** | All recursive functions accepted by Lean without `partial` or `unsafe` |
-| **M-5** | **No Identity Passes** | No pipeline field uses `:= id` or `fun x => x` without PENDIENTE tag in DAG |
+| **M-5** | **No Identity Passes** | No pipeline field uses `:= id` or `fun x => x` without PENDING tag in DAG |
 | **M-6** | **DecidableEq Coverage** | Every custom inductive type has `DecidableEq` instance |
 
 **Failure Mode:** Any M-1 through M-6 failure blocks phase completion.
@@ -38,7 +38,7 @@ These checks apply to **every phase** and **every commit** before closing any bl
 
 ## B. Criteria by Node Type
 
-### 1. FUNDACIONAL Nodes
+### 1. FOUNDATIONAL Nodes
 
 **Covered Nodes:**
 - `CryptoOp` inductive type
@@ -52,12 +52,12 @@ These checks apply to **every phase** and **every commit** before closing any bl
 
 | Obligation ID | Theorem Statement | Rationale |
 |--------------|-------------------|-----------|
-| **F-1** | `∀ (op : CryptoOp), DecidableEq op` | Decidability required for E-graph union-find |
-| **F-2** | `∀ (p : DesignParams), DecidableEq p` | Decidability for parameter comparison |
-| **F-3** | Algebraic laws for `CryptoOp` operations (if applicable) | Example: `∀ x y, xor x y = xor y x` (commutativity) |
-| **F-4** | `NodeOps` typeclass laws defined and stated | Example: `∀ (instance : NodeOps T), op_preserves_semantics instance` |
-| **F-5** | `∀ (instance : NodeOps T), instance_obeys_laws instance` | Proof that each concrete instance satisfies F-4 laws |
-| **F-6** | `∀ (r : SoundCryptoRule), semantically_equal r.lhs r.rhs` | Central soundness property of rewrite rules |
+| **F-1** | `forall (op : CryptoOp), DecidableEq op` | Decidability required for E-graph union-find |
+| **F-2** | `forall (p : DesignParams), DecidableEq p` | Decidability for parameter comparison |
+| **F-3** | Algebraic laws for `CryptoOp` operations (if applicable) | Example: `forall x y, xor x y = xor y x` (commutativity) |
+| **F-4** | `NodeOps` typeclass laws defined and stated | Example: `forall (instance : NodeOps T), op_preserves_semantics instance` |
+| **F-5** | `forall (instance : NodeOps T), instance_obeys_laws instance` | Proof that each concrete instance satisfies F-4 laws |
+| **F-6** | `forall (r : SoundCryptoRule), semantically_equal r.lhs r.rhs` | Central soundness property of rewrite rules |
 | **F-7** | Master Theorem formally stated with explicit preconditions | Must be a concrete `theorem` declaration, not a comment |
 
 #### Stress Tests
@@ -77,7 +77,7 @@ These checks apply to **every phase** and **every commit** before closing any bl
 
 ---
 
-### 2. CRÍTICO Nodes
+### 2. CRITICAL Nodes
 
 **Covered Nodes:**
 - E-Graph Core (EClass, union-find)
@@ -94,16 +94,16 @@ These checks apply to **every phase** and **every commit** before closing any bl
 
 | Obligation ID | Theorem Statement | Rationale |
 |--------------|-------------------|-----------|
-| **C-1** | `∀ g fuel, ∃ g', saturateF g fuel = g'` | **Termination:** Saturation always terminates |
-| **C-2** | `∀ g, saturateF g (max_fuel g) = saturateF (saturateF g (max_fuel g)) (max_fuel g)` | **Fixpoint:** Saturation reaches a fixpoint |
-| **C-3** | `∀ g n1 n2, (find g n1) = (find g n2) → semantically_equal n1 n2` | **Soundness:** Union-find preserves semantic equality |
-| **C-4** | `∀ g n1 n2, semantically_equal n1 n2 → ∃ g', (find (saturateF g max_fuel) n1) = (find g' n2)` | **Completeness:** Saturation discovers all equalities (relative to rule set) |
-| **C-5** | `∀ (v : Valuation) (g : EGraph), consistent v g → (∀ n1 n2, find g n1 = find g n2 → v n1 = v n2)` | **ConsistentValuation:** Semantic interpretation respects E-class equivalence |
-| **C-6** | `∀ (r : ConcreteRule), ∀ g n, r.applies g n → semantically_equal (r.lhs_pattern n) (r.rhs_pattern n)` | **Rule Soundness:** Each concrete rule preserves semantics |
-| **C-7** | `∀ (stage_i : PipelineStage), ∀ x, P_{i-1} x → P_i (stage_i.transform x)` | **Stage Soundness:** Each pipeline stage preserves invariants |
-| **C-8** | `∀ g, let S := extractPareto g; ∀ s ∈ S, ¬(∃ s' ∈ S, s' ≠ s ∧ dominates s' s)` | **Pareto Soundness:** Extracted set contains no dominated elements |
-| **C-9** | `∀ g, let S := extractPareto g; ∀ n ∈ (nodes g), is_pareto_optimal n g → (∃ s ∈ S, semantically_equal n s)` | **Pareto Completeness:** All Pareto-optimal nodes have a representative in extracted set |
-| **C-10** | `∀ (d : DesignParams), let P := full_pipeline d; ∀ p ∈ P, is_valid_hash_candidate p ∧ is_pareto_optimal_wrt_d p d` | **End-to-End Soundness:** Pipeline composition preserves validity and Pareto-optimality |
+| **C-1** | `forall g fuel, exists g', saturateF g fuel = g'` | **Termination:** Saturation always terminates |
+| **C-2** | `forall g, saturateF g (max_fuel g) = saturateF (saturateF g (max_fuel g)) (max_fuel g)` | **Fixpoint:** Saturation reaches a fixpoint |
+| **C-3** | `forall g n1 n2, (find g n1) = (find g n2) -> semantically_equal n1 n2` | **Soundness:** Union-find preserves semantic equality |
+| **C-4** | `forall g n1 n2, semantically_equal n1 n2 -> exists g', (find (saturateF g max_fuel) n1) = (find g' n2)` | **Completeness:** Saturation discovers all equalities (relative to rule set) |
+| **C-5** | `forall (v : Valuation) (g : EGraph), consistent v g -> (forall n1 n2, find g n1 = find g n2 -> v n1 = v n2)` | **ConsistentValuation:** Semantic interpretation respects E-class equivalence |
+| **C-6** | `forall (r : ConcreteRule), forall g n, r.applies g n -> semantically_equal (r.lhs_pattern n) (r.rhs_pattern n)` | **Rule Soundness:** Each concrete rule preserves semantics |
+| **C-7** | `forall (stage_i : PipelineStage), forall x, P_{i-1} x -> P_i (stage_i.transform x)` | **Stage Soundness:** Each pipeline stage preserves invariants |
+| **C-8** | `forall g, let S := extractPareto g; forall s in S, not (exists s' in S, s' != s /\ dominates s' s)` | **Pareto Soundness:** Extracted set contains no dominated elements |
+| **C-9** | `forall g, let S := extractPareto g; forall n in (nodes g), is_pareto_optimal n g -> (exists s in S, semantically_equal n s)` | **Pareto Completeness:** All Pareto-optimal nodes have a representative in extracted set |
+| **C-10** | `forall (d : DesignParams), let P := full_pipeline d; forall p in P, is_valid_hash_candidate p /\ is_pareto_optimal_wrt_d p d` | **End-to-End Soundness:** Pipeline composition preserves validity and Pareto-optimality |
 
 #### Stress Tests
 
@@ -111,12 +111,12 @@ These checks apply to **every phase** and **every commit** before closing any bl
 |---------|----------|-------------------|
 | **SC-1** | Empty E-graph (0 nodes) | Saturation terminates immediately, `extractPareto` returns `[]` |
 | **SC-2** | Single-node E-graph | Saturation terminates, node is trivially Pareto-optimal |
-| **SC-3** | E-graph with self-loops (n1 → n1) | Union-find handles cycles, saturation terminates |
+| **SC-3** | E-graph with self-loops (n1 -> n1) | Union-find handles cycles, saturation terminates |
 | **SC-4** | Zero fuel (`saturateF g 0`) | Returns input graph unchanged (identity) |
 | **SC-5** | Fuel = 1 | Applies exactly one rewrite round |
 | **SC-6** | Maximum arity nodes (e.g., 8-input XOR) | Pattern matching works, no stack overflow |
 | **SC-7** | Degenerate `DesignParams` (all constraints maxed out) | Pipeline returns empty Pareto set (valid behavior) |
-| **SC-8** | Rule with contradictory preconditions | Rule never applies (verified via non-vacuity test showing `¬∃ g n, rule.applies g n`) |
+| **SC-8** | Rule with contradictory preconditions | Rule never applies (verified via non-vacuity test showing `not exists g n, rule.applies g n`) |
 
 #### Edge Cases
 
@@ -134,18 +134,18 @@ These checks apply to **every phase** and **every commit** before closing any bl
 | **Excessive `native_decide`** | Masks proof structure, fails on abstract types | Manual review: flag `native_decide` in theorems with >3 hypotheses |
 | **`simp [*]` without specific lemmas** | Non-reproducible, fragile to lemma additions | CI check: reject `simp [*]` in pipeline theorems |
 | **`decide` on >256 cases** | Compile-time explosion, unreadable proof | Review: flag `decide` calls on large inductives |
-| **Theorems with 0 hypotheses proven via `trivial`** | Likely a tautology (`True`, `P → P`) | Audit: flag theorems with conclusion = `True` or `⊤` |
+| **Theorems with 0 hypotheses proven via `trivial`** | Likely a tautology (`True`, `P -> P`) | Audit: flag theorems with conclusion = `True` or `top` |
 
 #### Architectural Coherence
 
 - **AC-C1:** Every `ConcreteRule` must be registered in the rule database used by `saturateF`
-- **AC-C2:** The Rule Preservation Bridge must have a theorem proving `∀ r, interp_simplified r = interp_complex r` for each rule
+- **AC-C2:** The Rule Preservation Bridge must have a theorem proving `forall r, interp_simplified r = interp_complex r` for each rule
 - **AC-C3:** Each pipeline stage must have a consumer (either the next stage or the final output aggregator)
 - **AC-C4:** The `ExtractPareto` function must be called exactly once in the pipeline (no redundant extractions)
 
 ---
 
-### 3. PARALELO Nodes
+### 3. PARALLEL Nodes
 
 **Covered Nodes:**
 - Pareto Dominance relation
@@ -158,12 +158,12 @@ These checks apply to **every phase** and **every commit** before closing any bl
 
 | Obligation ID | Theorem Statement | Rationale |
 |--------------|-------------------|-----------|
-| **P-1** | `∀ x, ¬(dominates x x)` | **Irreflexivity:** Pareto dominance is irreflexive |
-| **P-2** | `∀ x y z, dominates x y → dominates y z → dominates x z` | **Transitivity:** Pareto dominance is transitive |
-| **P-3** | `∀ (n1 n2 : Node) (r : ImprovementRule), rewrites r n1 n2 → cost n2 ≤ cost n1` | **Cost Consistency:** Improvement rules reduce cost |
-| **P-4** | `∀ (e : BoolExpr), eval_bool e = true ↔ InterpProp e` | **Bool-Prop Equivalence:** Boolean and propositional semantics coincide |
-| **P-5** | `∀ (instance : MyTypeclass T), DecidableEq T` | **Instance Coherence:** All typeclass instances provide decidability |
-| **P-6** | `∀ g, extractF_greedy g ⊆ nodes g ∧ (∀ n ∈ extractF_greedy g, ¬∃ n' ∈ extractF_greedy g, dominates n' n)` | **Greedy Extraction Soundness:** Extracted nodes are Pareto-optimal within the extraction |
+| **P-1** | `forall x, not (dominates x x)` | **Irreflexivity:** Pareto dominance is irreflexive |
+| **P-2** | `forall x y z, dominates x y -> dominates y z -> dominates x z` | **Transitivity:** Pareto dominance is transitive |
+| **P-3** | `forall (n1 n2 : Node) (r : ImprovementRule), rewrites r n1 n2 -> cost n2 <= cost n1` | **Cost Consistency:** Improvement rules reduce cost |
+| **P-4** | `forall (e : BoolExpr), eval_bool e = true <-> InterpProp e` | **Bool-Prop Equivalence:** Boolean and propositional semantics coincide |
+| **P-5** | `forall (instance : MyTypeclass T), DecidableEq T` | **Instance Coherence:** All typeclass instances provide decidability |
+| **P-6** | `forall g, extractF_greedy g subset nodes g /\ (forall n in extractF_greedy g, not exists n' in extractF_greedy g, dominates n' n)` | **Greedy Extraction Soundness:** Extracted nodes are Pareto-optimal within the extraction |
 
 #### Stress Tests
 
@@ -183,7 +183,7 @@ These checks apply to **every phase** and **every commit** before closing any bl
 
 ---
 
-### 4. HOJA Nodes
+### 4. LEAF Nodes
 
 **Covered Nodes:**
 - Smoke Tests
@@ -195,9 +195,9 @@ These checks apply to **every phase** and **every commit** before closing any bl
 
 | Obligation ID | Theorem Statement | Rationale |
 |--------------|-------------------|-----------|
-| **H-1** | `∀ (r : ConcreteRule), ∃ g n, r.applies g n` | **Rule Non-vacuity:** Each rule is applicable to at least one graph/node pair |
-| **H-2** | `∃ (d : DesignParams), let P := full_pipeline d; P ≠ [] ∧ P.length > 1` | **E2E Non-vacuity:** Pipeline produces non-trivial output for some input |
-| **H-3** | `∀ (instance : ToString T), ∀ x, (toString x).length > 0` | **Instance Sanity:** `ToString` instances produce non-empty strings |
+| **H-1** | `forall (r : ConcreteRule), exists g n, r.applies g n` | **Rule Non-vacuity:** Each rule is applicable to at least one graph/node pair |
+| **H-2** | `exists (d : DesignParams), let P := full_pipeline d; P != [] /\ P.length > 1` | **E2E Non-vacuity:** Pipeline produces non-trivial output for some input |
+| **H-3** | `forall (instance : ToString T), forall x, (toString x).length > 0` | **Instance Sanity:** `ToString` instances produce non-empty strings |
 | **H-4** | Smoke tests for each major component (no proof obligation, but must compile and run) | **Basic Execution:** Verify that example inputs run without runtime errors |
 
 #### Stress Tests
@@ -239,7 +239,7 @@ python3 ~/.claude/skills/plan-project/scripts/wiring_audit.py --strict SuperHash
 
 | Check ID | Criterion | Verification Method |
 |----------|-----------|---------------------|
-| **PI-1** | **Correct Order** | Pipeline stages must execute in order: `saturate → costs → extract → pareto` |
+| **PI-1** | **Correct Order** | Pipeline stages must execute in order: `saturate -> costs -> extract -> pareto` |
 | **PI-2** | **No Skipped Stages** | Every stage defined in the architecture must appear in `full_pipeline` |
 | **PI-3** | **Type Compatibility** | Output type of stage `i` must match input type of stage `i+1` |
 | **PI-4** | **Soundness Chain** | There must be a theorem proving end-to-end soundness by composing individual stage soundness theorems |
@@ -250,7 +250,7 @@ python3 ~/.claude/skills/plan-project/scripts/wiring_audit.py --strict SuperHash
 
 | Check ID | Criterion | Verification Method |
 |----------|-----------|---------------------|
-| **NV-1** | **Theorems with ≥3 Prop Hypotheses** | Must have a corresponding `example` instantiating all hypotheses |
+| **NV-1** | **Theorems with >=3 Prop Hypotheses** | Must have a corresponding `example` instantiating all hypotheses |
 | **NV-2** | **Compositional Chains** | Root theorem of a soundness chain must have an end-to-end `example` |
 | **NV-3** | **Examples Compile** | All non-vacuity examples must compile without `sorry` |
 | **NV-4** | **Examples Use `native_decide` or Explicit Construction** | No `sorry` or `admit` in hypothesis witnesses |
@@ -265,9 +265,9 @@ Flag **T4-NO-WITNESS** findings.
 
 | Check ID | Criterion | Verification Method |
 |----------|-----------|---------------------|
-| **IP-1** | **No `:= id` in Pipeline** | No pipeline structure field may use `:= id` unless tagged PENDIENTE in ARCHITECTURE.md |
-| **IP-2** | **No `fun x => x` in Pipeline** | No pipeline structure field may use `fun x => x` unless tagged PENDIENTE |
-| **IP-3** | **Documented Debt** | Every PENDIENTE identity pass must have a GitHub issue or DAG node tracking its replacement |
+| **IP-1** | **No `:= id` in Pipeline** | No pipeline structure field may use `:= id` unless tagged PENDING in ARCHITECTURE.md |
+| **IP-2** | **No `fun x => x` in Pipeline** | No pipeline structure field may use `fun x => x` unless tagged PENDING |
+| **IP-3** | **Documented Debt** | Every PENDING identity pass must have a GitHub issue or DAG node tracking its replacement |
 
 **Detection:** Manual code review + grep for `:= id` and `fun x => x` in pipeline files.
 
@@ -275,10 +275,10 @@ Flag **T4-NO-WITNESS** findings.
 
 | Check ID | Criterion | Verification Method |
 |----------|-----------|---------------------|
-| **SH-1** | **No Vacuous Theorems** | No `theorem ... : True` or `theorem ... : ⊤` |
+| **SH-1** | **No Vacuous Theorems** | No `theorem ... : True` or `theorem ... : top` |
 | **SH-2** | **No Universal Underscores** | No theorems with all parameters prefixed with `_` (indicates unused hypotheses) |
-| **SH-3** | **Directional Correctness** | Theorems named `*_sound` must have conclusion with `=`, `↔`, or `→` |
-| **SH-4** | **Hypothesis Limit** | Pipeline theorems should have ≤8 hypotheses (extract complex conditions as definitions) |
+| **SH-3** | **Directional Correctness** | Theorems named `*_sound` must have conclusion with `=`, `<->`, or `->` |
+| **SH-4** | **Hypothesis Limit** | Pipeline theorems should have <=8 hypotheses (extract complex conditions as definitions) |
 | **SH-5** | **Smoke Tests for Satisfiability** | Every pipeline theorem must have a `#eval` or `example` below it verifying hypotheses are satisfiable |
 
 **Detection:** Run spec audit:
@@ -309,10 +309,10 @@ Before closing any phase:
 
 3. **Verify Node-Specific Obligations:**
    - Manually review proof obligations table for current phase
-   - For FUNDACIONAL nodes: verify F-1 to F-7
-   - For CRÍTICO nodes: verify C-1 to C-10
-   - For PARALELO nodes: verify P-1 to P-6
-   - For HOJA nodes: verify H-1 to H-4
+   - For FOUNDATIONAL nodes: verify F-1 to F-7
+   - For CRITICAL nodes: verify C-1 to C-10
+   - For PARALLEL nodes: verify P-1 to P-6
+   - For LEAF nodes: verify H-1 to H-4
 
 4. **Execute Stress Tests:**
    - Run all tests in `Tests/Stress/` directory for current phase
@@ -325,7 +325,7 @@ Before closing any phase:
 
 6. **Document Results:**
    - Update this file with pass/fail status for each criterion
-   - Tag commit with phase version (e.g., `v1.0-fase1`)
+   - Tag commit with phase version (e.g., `v1.0-phase1`)
    - Extract lessons via `close_block.py --lessons`
 
 ### Failure Resolution
@@ -376,16 +376,16 @@ If any criterion fails:
 
 SuperHash v1.0 is **ready for release** when:
 
-1. ✅ All mechanical checks (M-1 to M-6) pass
-2. ✅ All FUNDACIONAL obligations (F-1 to F-7) proven
-3. ✅ All CRÍTICO obligations (C-1 to C-10) proven
-4. ✅ All PARALELO obligations (P-1 to P-6) proven
-5. ✅ All HOJA obligations (H-1 to H-4) satisfied
-6. ✅ All cross-cutting checks (W-1 to W-5, PI-1 to PI-4, NV-1 to NV-4, IP-1 to IP-3, SH-1 to SH-5) pass
-7. ✅ End-to-end example in `Tests/NonVacuity.lean` compiles and runs
-8. ✅ Benchmark results documented in section E above
-9. ✅ All phases tagged with version numbers
-10. ✅ `ARCHITECTURE.md` reflects final state (no PENDIENTE nodes with identity passes)
+1. All mechanical checks (M-1 to M-6) pass
+2. All FOUNDATIONAL obligations (F-1 to F-7) proven
+3. All CRITICAL obligations (C-1 to C-10) proven
+4. All PARALLEL obligations (P-1 to P-6) proven
+5. All LEAF obligations (H-1 to H-4) satisfied
+6. All cross-cutting checks (W-1 to W-5, PI-1 to PI-4, NV-1 to NV-4, IP-1 to IP-3, SH-1 to SH-5) pass
+7. End-to-end example in `Tests/NonVacuity.lean` compiles and runs
+8. Benchmark results documented in section E above
+9. All phases tagged with version numbers
+10. `ARCHITECTURE.md` reflects final state (no PENDING nodes with identity passes)
 
 **Final Verification Command:**
 ```bash
@@ -393,7 +393,7 @@ lake build && \
 python3 ~/.claude/skills/plan-project/scripts/spec_audit.py --strict SuperHash/ && \
 python3 ~/.claude/skills/plan-project/scripts/wiring_audit.py --strict SuperHash/ && \
 rg --count-matches "sorry" SuperHash/ | grep -q "^0$" && \
-echo "✅ SuperHash v1.0 VERIFIED"
+echo "SuperHash v1.0 VERIFIED"
 ```
 
 ---
@@ -409,7 +409,7 @@ echo "✅ SuperHash v1.0 VERIFIED"
 
 **Critical Improvements Implemented:**
 1. **Reframed as Formal Proof Obligations:** Shifted from implementation checklist to theorem-based verification criteria
-2. **Added Mathematical Rigor:** Every criterion now expressed as a concrete theorem statement (e.g., `∀ g fuel, ∃ g', saturateF g fuel = g'`)
+2. **Added Mathematical Rigor:** Every criterion now expressed as a concrete theorem statement (e.g., `forall g fuel, exists g', saturateF g fuel = g'`)
 3. **Foundational Guarantees:** Added decidability, typeclass laws, and termination proofs as mandatory
 4. **Algorithmic Properties:** Included termination, fixpoint, soundness, and completeness proofs for E-graph saturation
 5. **Typeclass Laws:** Explicitly require definition and proof of laws for all typeclasses
@@ -442,10 +442,10 @@ Nodes covered: N4.4 Stage Soundness Composition.
 
 | Metric | Target | Actual | Status |
 |--------|--------|--------|--------|
-| LOC | — | 0 | — |
-| Theorems | — | 0 | — |
-| Lemmas | — | 0 | — |
-| Defs | — | 0 | — |
+| LOC | -- | 0 | -- |
+| Theorems | -- | 0 | -- |
+| Lemmas | -- | 0 | -- |
+| Defs | -- | 0 | -- |
 | Sorry count | 0 | 0 | PASS |
 
 #### 3. Acceptability Analysis
@@ -456,7 +456,7 @@ Nodes covered: N4.4 Stage Soundness Composition.
 
 | Item | Location | Cause | Affected Nodes | Mitigation |
 |------|----------|-------|----------------|------------|
-| (none) | — | — | — | — |
+| (none) | -- | -- | -- | -- |
 
 ### Scalarization + Bool-Prop Bridge (v1.0.0)
 
@@ -470,10 +470,10 @@ Nodes covered: N5.1 Scalarization + Monotonicity, N5.2 Bool-Prop Bridge.
 
 | Metric | Target | Actual | Status |
 |--------|--------|--------|--------|
-| LOC | — | 0 | — |
-| Theorems | — | 0 | — |
-| Lemmas | — | 0 | — |
-| Defs | — | 0 | — |
+| LOC | -- | 0 | -- |
+| Theorems | -- | 0 | -- |
+| Lemmas | -- | 0 | -- |
+| Defs | -- | 0 | -- |
 | Sorry count | 0 | 0 | PASS |
 
 #### 3. Acceptability Analysis
@@ -484,7 +484,7 @@ Nodes covered: N5.1 Scalarization + Monotonicity, N5.2 Bool-Prop Bridge.
 
 | Item | Location | Cause | Affected Nodes | Mitigation |
 |------|----------|-------|----------------|------------|
-| (none) | — | — | — | — |
+| (none) | -- | -- | -- | -- |
 
 ### ExtractPareto (v1.0.0)
 
@@ -498,10 +498,10 @@ Nodes covered: N5.3 ExtractPareto.
 
 | Metric | Target | Actual | Status |
 |--------|--------|--------|--------|
-| LOC | — | 0 | — |
-| Theorems | — | 0 | — |
-| Lemmas | — | 0 | — |
-| Defs | — | 0 | — |
+| LOC | -- | 0 | -- |
+| Theorems | -- | 0 | -- |
+| Lemmas | -- | 0 | -- |
+| Defs | -- | 0 | -- |
 | Sorry count | 0 | 0 | PASS |
 
 #### 3. Acceptability Analysis
@@ -512,7 +512,7 @@ Nodes covered: N5.3 ExtractPareto.
 
 | Item | Location | Cause | Affected Nodes | Mitigation |
 |------|----------|-------|----------------|------------|
-| (none) | — | — | — | — |
+| (none) | -- | -- | -- | -- |
 
 ### Pareto Soundness (v1.0.0)
 
@@ -526,10 +526,10 @@ Nodes covered: N5.4 Pareto Soundness.
 
 | Metric | Target | Actual | Status |
 |--------|--------|--------|--------|
-| LOC | — | 0 | — |
-| Theorems | — | 0 | — |
-| Lemmas | — | 0 | — |
-| Defs | — | 0 | — |
+| LOC | -- | 0 | -- |
+| Theorems | -- | 0 | -- |
+| Lemmas | -- | 0 | -- |
+| Defs | -- | 0 | -- |
 | Sorry count | 0 | 0 | PASS |
 
 #### 3. Acceptability Analysis
@@ -540,7 +540,7 @@ Nodes covered: N5.4 Pareto Soundness.
 
 | Item | Location | Cause | Affected Nodes | Mitigation |
 |------|----------|-------|----------------|------------|
-| (none) | — | — | — | — |
+| (none) | -- | -- | -- | -- |
 
 ### Pipeline Composition (v1.0.0)
 
@@ -554,10 +554,10 @@ Nodes covered: N6.1 Pipeline Composition.
 
 | Metric | Target | Actual | Status |
 |--------|--------|--------|--------|
-| LOC | — | 0 | — |
-| Theorems | — | 0 | — |
-| Lemmas | — | 0 | — |
-| Defs | — | 0 | — |
+| LOC | -- | 0 | -- |
+| Theorems | -- | 0 | -- |
+| Lemmas | -- | 0 | -- |
+| Defs | -- | 0 | -- |
 | Sorry count | 0 | 0 | PASS |
 
 #### 3. Acceptability Analysis
@@ -568,7 +568,7 @@ Nodes covered: N6.1 Pipeline Composition.
 
 | Item | Location | Cause | Affected Nodes | Mitigation |
 |------|----------|-------|----------------|------------|
-| (none) | — | — | — | — |
+| (none) | -- | -- | -- | -- |
 
 ### Master Soundness Theorem (v1.0.0)
 
@@ -582,10 +582,10 @@ Nodes covered: N6.2 Master Soundness Theorem.
 
 | Metric | Target | Actual | Status |
 |--------|--------|--------|--------|
-| LOC | — | 0 | — |
-| Theorems | — | 0 | — |
-| Lemmas | — | 0 | — |
-| Defs | — | 0 | — |
+| LOC | -- | 0 | -- |
+| Theorems | -- | 0 | -- |
+| Lemmas | -- | 0 | -- |
+| Defs | -- | 0 | -- |
 | Sorry count | 0 | 0 | PASS |
 
 #### 3. Acceptability Analysis
@@ -596,7 +596,7 @@ Nodes covered: N6.2 Master Soundness Theorem.
 
 | Item | Location | Cause | Affected Nodes | Mitigation |
 |------|----------|-------|----------------|------------|
-| (none) | — | — | — | — |
+| (none) | -- | -- | -- | -- |
 
 ### Evaluation + E2E Non-vacuity (v1.0.0)
 
@@ -610,10 +610,10 @@ Nodes covered: N6.3 Evaluation Instances, N6.4 Non-vacuity E2E.
 
 | Metric | Target | Actual | Status |
 |--------|--------|--------|--------|
-| LOC | — | 0 | — |
-| Theorems | — | 0 | — |
-| Lemmas | — | 0 | — |
-| Defs | — | 0 | — |
+| LOC | -- | 0 | -- |
+| Theorems | -- | 0 | -- |
+| Lemmas | -- | 0 | -- |
+| Defs | -- | 0 | -- |
 | Sorry count | 0 | 0 | PASS |
 
 #### 3. Acceptability Analysis
@@ -624,7 +624,7 @@ Nodes covered: N6.3 Evaluation Instances, N6.4 Non-vacuity E2E.
 
 | Item | Location | Cause | Affected Nodes | Mitigation |
 |------|----------|-------|----------------|------------|
-| (none) | — | — | — | — |
+| (none) | -- | -- | -- | -- |
 
 ---
 ---
@@ -646,7 +646,7 @@ Nodes covered: N6.3 Evaluation Instances, N6.4 Non-vacuity E2E.
 
 ## V2-B. Criteria by Node Type
 
-### 1. FUNDACIONAL (N1.0, N1.1, N1.2, N2.1, N2.2, N3.1, N3.2)
+### 1. FOUNDATIONAL (N1.0, N1.1, N1.2, N2.1, N2.2, N3.1, N3.2)
 <!-- CHECK:V2-F -->
 
 | ID | Theorem | Rationale |
@@ -655,13 +655,13 @@ Nodes covered: N6.3 Evaluation Instances, N6.4 Non-vacuity E2E.
 | **V2-F2** | All 4 NodeOps axioms for extended CryptoOp | arity, map, replace, mapReplace |
 | **V2-F3** | `processClass_shi_combined` sorry closed | Gates entire v2.0 |
 | **V2-F4** | RuleCandidate round-trip TCB validation (D11) | Parser soundness |
-| **V2-F5** | `BoundedInput n x → evalBitVec = evalNat` | Abstract-concrete bridge |
+| **V2-F5** | `BoundedInput n x -> evalBitVec = evalNat` | Abstract-concrete bridge |
 | **V2-F6** | BitVec algebraic props (xor assoc/comm) | No Mathlib first principles |
 
 Stress: 0-round blocks, BitVec 0/1/256, empty/identical RuleCandidate LHS/RHS, near-miss counter-examples.
-Coherence: every constructor → evalCryptoOp branch + bridge rule + BoundedInput consistency.
+Coherence: every constructor -> evalCryptoOp branch + bridge rule + BoundedInput consistency.
 
-### 2. CRITICO (N1.3-N1.5, N2.3, N2.5, N3.3-N3.8, N3.10)
+### 2. CRITICAL (N1.3-N1.5, N2.3, N2.5, N3.3-N3.8, N3.10)
 <!-- CHECK:V2-C -->
 
 | ID | Theorem | Rationale |
@@ -674,14 +674,14 @@ Coherence: every constructor → evalCryptoOp branch + bridge rule + BoundedInpu
 | **V2-C6** | `designLoop_nonregression` | Quality non-decreasing (D12) |
 | **V2-C7** | `designLoop_fuel_decreasing` | Termination |
 | **V2-C8** | `pipeline_soundness_v2` 4-part | Master theorem v2.0 |
-| **V2-C9** | Non-vacuity for ≥3 Prop hyp theorems | Satisfiability |
+| **V2-C9** | Non-vacuity for >=3 Prop hyp theorems | Satisfiability |
 | **V2-C10** | v1.0 `pipeline_soundness` unmodified | Regression |
 
-Stress: empty rules → identity, single bridge rule, equally optimal exprs, contradictory rules rejected, 0 fuel → terminate, linear SmoothE → matches v1.0.
+Stress: empty rules -> identity, single bridge rule, equally optimal exprs, contradictory rules rejected, 0 fuel -> terminate, linear SmoothE -> matches v1.0.
 Prohibitions: no `Classical.choice` in pipeline, no `simp [*]` in master thm, no proof >50 lines without lemmas.
 Coherence: bridges compose with saturateF, SmoothE reduces to linear, loop types chain, v2.0 subsumes v1.0.
 
-### 3. PARALELO — Python (N2.4, N2.6, N2.7, N3.9)
+### 3. PARALLEL -- Python (N2.4, N2.6, N2.7, N3.9)
 <!-- CHECK:V2-P -->
 
 | ID | Check |
@@ -695,14 +695,14 @@ Coherence: bridges compose with saturateF, SmoothE reduces to linear, loop types
 
 Python = proposal engine. Lean = verification engine. RLVF reward from Lean only.
 
-### 4. HOJA (N1.6, N2.8, N3.11)
+### 4. LEAF (N1.6, N2.8, N3.11)
 <!-- CHECK:V2-H -->
 
 | ID | Check |
 |----|-------|
 | **V2-H1** | Bridge non-vacuity examples |
 | **V2-H2** | E2E demo full v2.0 pipeline |
-| **V2-H3** | ≥1 LLM rule compiles + verified |
+| **V2-H3** | >=1 LLM rule compiles + verified |
 | **V2-H4** | `#eval` smoke tests all instances |
 | **V2-H5** | Master v2.0 non-vacuity |
 
@@ -715,7 +715,7 @@ Python = proposal engine. Lean = verification engine. RLVF reward from Lean only
 | N1.5 | Pipeline backward compat | PRESERVATION | P0 |
 | N2.3 | Pool grows only with verified | INVARIANT | P0 |
 | N3.2 | Abstract-concrete agreement | EQUIVALENCE | P0 |
-| N3.6 | SmoothE → linear reduction | EQUIVALENCE | P1 |
+| N3.6 | SmoothE -> linear reduction | EQUIVALENCE | P1 |
 | N3.8 | Loop non-regression | PRESERVATION | P0 |
 | N3.10 | Master v2.0 non-vacuity | SOUNDNESS | P0 |
 
@@ -723,7 +723,7 @@ Python = proposal engine. Lean = verification engine. RLVF reward from Lean only
 
 ## V2-E. Acceptance
 
-v2.0 ready: v1.0 regression + V2-M/F/C/P/H all pass + `pipeline_soundness_v2` proven + E2E non-vacuity + ≥1 LLM rule verified + BitVec bridge proven.
+v2.0 ready: v1.0 regression + V2-M/F/C/P/H all pass + `pipeline_soundness_v2` proven + E2E non-vacuity + >=1 LLM rule verified + BitVec bridge proven.
 
 ## V2-F. QA Summary
 
