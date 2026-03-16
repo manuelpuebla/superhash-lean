@@ -27,10 +27,10 @@ Cada componente respaldado por un teorema verificado en Lean 4. El **master theo
 
 | Métrica | Valor |
 |---------|-------|
-| Build jobs | 122 |
-| Archivos Lean | 124 |
-| LOC | ~23,400 |
-| Teoremas + examples | ~1,278 |
+| Build jobs | 125 |
+| Archivos Lean | 127 |
+| LOC | ~24,500 |
+| Teoremas + examples | ~1,289 |
 | Sorry | 0 |
 | Axiomas custom | 0 (solo `propext` + `Quot.sound`) |
 | Rewrite rules (Nat) | 15 (5 simplification + 10 expansion) |
@@ -236,6 +236,14 @@ Saturation non-vacuity:    6→17 nodes with 3 rules (native_decide verified)
 | v3.3 | TrustHash S-box pipeline + quantum bounds + division property + 4D threat lattice + Pareto 6D | ✓ Complete |
 | v3.3.1 | Autopsy fixes: formula reconciliation + honest naming + dead code removal + documentation | ✓ Complete |
 | v4.0 | Graph infrastructure + TreewidthDP + ILP extraction + LLM-ready Python orchestrator | ✓ Complete |
+| v4.5 | Evolutionary co-evolution (Red Team vs Blue Team duel framework) | ✓ Complete |
+| v4.5.1 | Autopsy fixes: designSecurityLevel real, defense_eq_attack_bound non-rfl, DPMultiTable.wellformed | ✓ Complete |
+| v4.5.2 | Definitive autopsy: verdict_security_mono_rounds, designLoop_master CV+PMI+BNI, cv_unique_acyclic | ✓ Complete |
+| v4.5.3 | Final cleanup: AcyclicClassDAG instantiation, T1=0, documentation | ✓ Complete |
+| v4.5.4 | 6 attack models (slide, integral, cube, zeroSum, invariantSubspace, divisionProperty) + S-box library + GF(2^4) + circuitDepth + substitution rules | ✓ Complete |
+| v4.5.5 | Domain semantic fixes: compose δ product, activeMinSboxes decount, Poseidon δ docs, AES degree BCD11, bridge rename | ✓ Complete |
+| v4.5.6 | Active S-boxes formula: BN×R/2 → BN×R (matching LeanHash/TrustHash) | ✓ Complete |
+| v4.5.7 | Composition consistency: linearBias product, iterate δ/ε safePow, documentation | ✓ Complete |
 
 ## Work in progress
 
@@ -272,4 +280,4 @@ Connect Python orchestrator (AXLE, RLVF) with the verified Lean pipeline.
 ---
 
 *Código fuente:* [github.com/manuelpuebla/superhash-lean](https://github.com/manuelpuebla/superhash-lean)
-*122 build jobs · ~1,278 teoremas · 0 sorry · ILP extraction · TreewidthDP · LLM-ready · Lean 4.28.0*
+*125 build jobs · ~1,289 teoremas · 0 sorry · ILP extraction · TreewidthDP · LLM-ready · Lean 4.28.0*

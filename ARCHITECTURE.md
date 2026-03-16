@@ -1,11 +1,11 @@
-# SuperHash v2.0 — ARCHITECTURE
+# SuperHash v4.5.7 — ARCHITECTURE
 
-**Proyecto**: SuperHash v2.0
+**Proyecto**: SuperHash v4.5.7
 **Dominio**: Lean 4 (sin Mathlib) + Python tooling
 **Toolchain**: leanprover/lean4:v4.28.0
-**Versión**: v2.0-planning
-**Última actualización**: 2026-03-13
-**Base**: v1.0 complete (27 files, ~9017 LOC, 323+ theorems, 0 sorry, 0 axioms)
+**Versión**: v4.5.7
+**Última actualización**: 2026-03-16
+**Base**: 127 files, ~24,500 LOC, 1,289 theorems, 0 sorry, 0 axioms, 125 build jobs
 
 ---
 
