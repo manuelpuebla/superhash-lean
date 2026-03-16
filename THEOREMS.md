@@ -1,17 +1,13 @@
 ═══ Specification Audit: superhash_lean ═══
-Theorems: 1107  Lemmas: 0  Pipeline: 78
-Clean: 984  T1(vacuity): 2  T1.5(identity): 0  T2(weak): 11  T3(structural): 18  T4(no-witness): 92
+Theorems: 1113  Lemmas: 0  Pipeline: 78
+Clean: 991  T1(vacuity): 1  T1.5(identity): 0  T2(weak): 10  T3(structural): 18  T4(no-witness): 93
 
-── TIER 1 — VACUITY (2 issues) ──
+── TIER 1 — VACUITY (1 issues) ──
   theorem zest_parallel_speedup
     SuperHash/Crypto/ExpanderBounds.lean:296
     ⚠ T1-UNUSED-ALL: all 1 parameters are _-prefixed — likely a stub or vacuous proof
 
-  theorem dpMultiJoin_wellformed
-    SuperHash/Graph/DPCompose.lean:176
-    ⚠ T1-UNUSED-ALL: all 2 parameters are _-prefixed — likely a stub or vacuous proof
-
-── TIER 2 — WEAK SPECS (11 issues) ──
+── TIER 2 — WEAK SPECS (10 issues) ──
   theorem evalOp_ext_as
     SuperHash/Attack/AttackNodeSemantics.lean:143
     ⚠ T2-UNUSED-PARTIAL: 1/3 params are _-prefixed: ['_env']
@@ -19,10 +15,6 @@ Clean: 984  T1(vacuity): 2  T1.5(identity): 0  T2(weak): 11  T3(structural): 18 
   theorem empty_bni_attack
     SuperHash/Attack/AttackPipeline.lean:132
     ⚠ T2-EXISTENTIAL-ONLY: conclusion is existential without equality/equivalence — may not reach concrete evaluation
-
-  theorem pipeline_duel [PIPELINE]
-    SuperHash/Attack/DuelTheorem.lean:55
-    ⚠ T2-UNUSED-PARTIAL: 1/6 params are _-prefixed: ['_h_coverage']
 
   theorem evalOp_ext_cs
     SuperHash/Crypto/CryptoNodeSemantics.lean:154
@@ -40,12 +32,8 @@ Clean: 984  T1(vacuity): 2  T1.5(identity): 0  T2(weak): 11  T3(structural): 18 
     SuperHash/EGraph/Tests.lean:53
     ⚠ T2-UNUSED-PARTIAL: 1/3 params are _-prefixed: ['_env']
 
-  theorem insert_wellformed
-    SuperHash/Graph/DPCompose.lean:170
-    ⚠ T2-UNUSED-PARTIAL: 1/4 params are _-prefixed: ['_h']
-
   theorem dpMultiForget_wellformed
-    SuperHash/Graph/DPCompose.lean:173
+    SuperHash/Graph/DPCompose.lean:202
     ⚠ T2-UNUSED-PARTIAL: 1/3 params are _-prefixed: ['_h']
 
   theorem hadesTreewidth_pos
@@ -55,6 +43,10 @@ Clean: 984  T1(vacuity): 2  T1.5(identity): 0  T2(weak): 11  T3(structural): 18 
   theorem applyRuleAtF_sound [PIPELINE] [SORRY]
     SuperHash/Pipeline/EMatchSpec.lean:999
     ⚠ T2-PIPELINE-SORRY: pipeline theorem contains sorry — top-level result is unverified
+
+  theorem designLoop_preserves_cv
+    SuperHash/Pipeline/MasterTheoremV2.lean:36
+    ⚠ T2-EXISTENTIAL-ONLY: conclusion is existential without equality/equivalence — may not reach concrete evaluation
 
 ── TIER 3 — STRUCTURAL (18 issues) ──
   theorem attack_extractF_correct [PIPELINE]
@@ -131,7 +123,7 @@ Clean: 984  T1(vacuity): 2  T1.5(identity): 0  T2(weak): 11  T3(structural): 18 
     SuperHash/Rules/SoundRule.lean:87
     ⚠ T3-NAME-MISMATCH: name contains 'sound' but conclusion has no equality, biconditional, or implication
 
-── TIER 4 — NO WITNESS (92 issues) ──
+── TIER 4 — NO WITNESS (93 issues) ──
   theorem add_node_triple
     SuperHash/EGraph/AddNodeTriple.lean:17
     ⚠ T4-NO-WITNESS: 5 Prop hypotheses but no non-vacuity example found in Tests/NonVacuity*.lean or same file
@@ -187,6 +179,10 @@ Clean: 984  T1(vacuity): 2  T1.5(identity): 0  T2(weak): 11  T3(structural): 18 
   theorem rebuildStepBody_preserves_triple
     SuperHash/EGraph/Consistency.lean:1411
     ⚠ T4-NO-WITNESS: 3 Prop hypotheses but no non-vacuity example found in Tests/NonVacuity*.lean or same file
+
+  theorem consistent_valuation_step
+    SuperHash/EGraph/Consistency.lean:1445
+    ⚠ T4-NO-WITNESS: 7 Prop hypotheses but no non-vacuity example found in Tests/NonVacuity*.lean or same file
 
   theorem IsRootAt_of_rootD_self
     SuperHash/EGraph/CoreSpec.lean:229

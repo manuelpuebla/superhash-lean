@@ -44,7 +44,14 @@ theorem designLoopStep_nonregression (state : DesignLoopState) :
 /-- Best security bits does not decrease through the loop step.
     v4.5.1: quality-aware non-regression — bestSecurityBits is non-decreasing.
     Proof: the ∧ condition in designLoopStep ensures both length AND quality
-    must improve for the new front to be selected. -/
+    must improve for the new front to be selected.
+
+    **Important**: `securityBits` is an *operational metric* computed from the
+    `SecurityMetrics` of each design (via `evaluateDesign`). It is NOT a formal
+    security bound — formal security is established by `pipeline_duel` and
+    `duel_security_nondecreasing`. This theorem guarantees that the design
+    loop's heuristic quality metric does not regress, complementing the formal
+    security guarantees with an operational invariant. -/
 theorem designLoopStep_best_nondecreasing (state : DesignLoopState) :
     bestSecurityBits (designLoopStep state).paretoFront ≥
     bestSecurityBits state.paretoFront := by

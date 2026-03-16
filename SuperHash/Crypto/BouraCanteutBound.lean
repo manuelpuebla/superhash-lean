@@ -517,6 +517,21 @@ theorem iterated_bcd11_nondecreasing (n degG gamma r : Nat)
     iteratedBcd11 n degG gamma r ≤ iteratedBcd11 n degG gamma (r + 1) :=
   iterated_bcd11_mono_rounds n degG gamma r h_gamma
 
+/-- **Iterated bound is monotone for arbitrary round gaps (not just +1).**
+    v4.5.2 A1: Generalizes `iterated_bcd11_mono_rounds` from r → r+1 to r1 → r2.
+    Proof by induction on the gap r2 - r1, composing single-step monotonicity. -/
+theorem iterated_bcd11_mono_general (n degG gamma r1 r2 : Nat)
+    (h_gamma : gamma ≥ 2) (h_rounds : r1 ≤ r2) :
+    iteratedBcd11 n degG gamma r1 ≤ iteratedBcd11 n degG gamma r2 := by
+  obtain ⟨k, rfl⟩ := Nat.exists_eq_add_of_le h_rounds
+  induction k with
+  | zero => simp
+  | succ k ih =>
+    have h_step := iterated_bcd11_mono_rounds n degG gamma (r1 + k) h_gamma
+    have h_eq : r1 + k + 1 = r1 + (k + 1) := by omega
+    rw [h_eq] at h_step
+    exact Nat.le_trans (ih (by omega)) h_step
+
 -- ============================================================
 -- Section 9: Concrete Applications — AES
 -- ============================================================

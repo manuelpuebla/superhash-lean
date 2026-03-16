@@ -84,18 +84,29 @@ private theorem verdict_security_unfold (spec : HashSpec) :
 /-- **THE bridge theorem**: defense security level = attack cost lower bound.
     Both sides compute the same min over independent cost models, but are
     defined through different paths (verdict vs. explicit attack models).
-    Proof by structural unfolding — NOT `rfl`. -/
+
+    **Structural independence**: the proof proceeds in 5 component-by-component steps:
+    1. Unfold both sides to their constituent cost functions
+    2. Rewrite the defense side via `verdict_security_unfold`
+    3. Unfold `genericFloor` into `min(birthdayBound, gbpBound)`
+    4. Observe that `gbpBound = birthdayBound` (both are `outputBits/2`)
+    5. Conclude by `omega` on the simplified `min` expression
+
+    Each attack model (brute-force, differential, algebraic, DP, higher-order) contributes
+    independently to both sides. The bridge holds because the verdict and the attack
+    cost lower bound compute the same min over the same 5 cost functions, differing
+    only in the generic floor factorization (`min(birthday, gbp)` vs. `birthday`). -/
 theorem defense_eq_attack_bound (spec : HashSpec) :
     defenseSecurityLevel spec = attackCostLowerBound spec := by
+  -- Step 1: Unfold both sides to constituent cost functions
   simp only [defenseSecurityLevel, attackCostLowerBound,
     bruteForceAttackCost, differentialAttackCost, algebraicAttackCost,
     dpAttackCost, higherOrderAttackCost]
+  -- Step 2: Rewrite defense side via verdict_security_unfold
   rw [verdict_security_unfold]
-  -- LHS: min (genericFloor spec) (min diff (min alg (min dp ho)))
-  -- RHS: min (birthdayBound spec) (min diff (min alg (min dp ho)))
-  -- genericFloor = min (birthdayBound) (gbpBound) = min x x = x = birthdayBound
+  -- Step 3-4: genericFloor = min(birthday, gbp) where gbp = birthday
   simp only [genericFloor, gbpBound, birthdayBound]
-  -- min (min (outputBits/2) (outputBits/2)) ... = min (outputBits/2) ...
+  -- Step 5: min(min(x, x), rest) = min(x, rest) by omega
   omega
 
 -- ══════════════════════════════════════════════════════════════════

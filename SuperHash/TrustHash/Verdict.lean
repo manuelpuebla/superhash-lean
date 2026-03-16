@@ -249,7 +249,88 @@ theorem differential_mono_rounds (spec1 spec2 : HashSpec)
   exact sourceEntropy_mono_active _ _ _ _ (Nat.mul_le_mul_left _ (Nat.div_le_div_right h_rounds))
 
 -- ============================================================
--- Section 8: Non-vacuity
+-- Section 8: Monotonicity infrastructure (v4.5.2 Block A)
+-- ============================================================
+
+/-- Higher-order cost is monotone in rounds.
+    v4.5.2 A2: `higherOrderCost = iteratedBcd11(..., R) + 1`, trivially mono. -/
+theorem higherOrderCost_mono_rounds (spec1 spec2 : HashSpec)
+    (h_same : spec1.sboxBits = spec2.sboxBits ∧
+              spec1.numSboxes = spec2.numSboxes ∧
+              spec1.gamma = spec2.gamma)
+    (h_gamma : spec1.gamma ≥ 2)
+    (h_rounds : spec1.numRounds ≤ spec2.numRounds) :
+    higherOrderCost spec1 ≤ higherOrderCost spec2 := by
+  simp only [higherOrderCost]
+  obtain ⟨hsb, hns, hg⟩ := h_same
+  rw [hsb, hns, hg]
+  exact Nat.add_le_add_right
+    (iterated_bcd11_mono_general _ _ _ _ _ (hg ▸ h_gamma) h_rounds) 1
+
+/-- Algebraic cost is monotone in rounds.
+    v4.5.2 A3: 4-case split on if-branch. Key: BCD11 degree ≤ 1 at fewer rounds
+    implies ≤ 1 at more rounds is impossible (BCD11 is monotone). -/
+theorem algebraicCost_mono_rounds (spec1 spec2 : HashSpec)
+    (h_same : spec1.sboxBits = spec2.sboxBits ∧
+              spec1.numSboxes = spec2.numSboxes ∧
+              spec1.gamma = spec2.gamma ∧
+              spec1.tree = spec2.tree)
+    (h_gamma : spec1.gamma ≥ 2)
+    (h_rounds : spec1.numRounds ≤ spec2.numRounds) :
+    algebraicCost spec1 ≤ algebraicCost spec2 := by
+  simp only [algebraicCost]
+  obtain ⟨hsb, hns, hg, htree⟩ := h_same
+  rw [hsb, hns, hg, htree]
+  have h_mono := iterated_bcd11_mono_general
+    (spec2.sboxBits * spec2.numSboxes) 0 spec2.gamma
+    spec1.numRounds spec2.numRounds (hg ▸ h_gamma) h_rounds
+  -- Split on both if-conditions
+  split
+  · -- LHS = 0 (degree ≤ 1): 0 ≤ anything
+    omega
+  · -- LHS > 0 (degree > 1): RHS must also have degree > 1
+    rename_i h1
+    split
+    · -- RHS = 0 but LHS > 0: contradiction (BCD11 mono + h1)
+      rename_i h2; omega
+    · -- Both > 1: multiply monotonicity
+      exact Nat.mul_le_mul_left _ (ilog2_mono _ _ h_mono)
+
+/-- Local unfold: verdict security = min(genericFloor, min(diff, min(alg, min(dp, ho)))). -/
+theorem verdict_security_eq (spec : HashSpec) :
+    (computeFullVerdict spec).security =
+    min (genericFloor spec) (min (differentialCost spec)
+      (min (algebraicCost spec) (min (dpCost spec) (higherOrderCost spec)))) := rfl
+
+/-- **Verdict security is monotone in rounds (all other params equal).**
+    v4.5.2 A4: Master monotonicity theorem. Composes genericFloor (equal),
+    differential (existing), algebraic (A3), dp (equal), higherOrder (A2).
+    `min` of nondecreasing functions is nondecreasing. -/
+theorem verdict_security_mono_rounds (spec1 spec2 : HashSpec)
+    (h_output : spec1.outputBits = spec2.outputBits)
+    (h_params : spec1.branchNumber = spec2.branchNumber ∧
+                spec1.sboxBits = spec2.sboxBits ∧
+                spec1.delta = spec2.delta ∧
+                spec1.numSboxes = spec2.numSboxes ∧
+                spec1.gamma = spec2.gamma ∧
+                spec1.tree = spec2.tree ∧
+                spec1.sboxDeg = spec2.sboxDeg)
+    (h_gamma : spec1.gamma ≥ 2)
+    (h_rounds : spec1.numRounds ≤ spec2.numRounds) :
+    (computeFullVerdict spec1).security ≤ (computeFullVerdict spec2).security := by
+  rw [verdict_security_eq, verdict_security_eq]
+  obtain ⟨hbn, hsb, hd, hns, hg, htree, hsdeg⟩ := h_params
+  have h_gen : genericFloor spec1 = genericFloor spec2 := by
+    simp [genericFloor, birthdayBound, gbpBound, h_output]
+  have h_diff := differential_mono_rounds spec1 spec2 ⟨hbn, hsb, hd⟩ h_rounds
+  have h_alg := algebraicCost_mono_rounds spec1 spec2 ⟨hsb, hns, hg, htree⟩ h_gamma h_rounds
+  have h_dp : dpCost spec1 = dpCost spec2 := by
+    simp only [dpCost]; rw [htree, hd, hsdeg]
+  have h_ho := higherOrderCost_mono_rounds spec1 spec2 ⟨hsb, hns, hg⟩ h_gamma h_rounds
+  rw [h_gen, h_dp]; omega
+
+-- ============================================================
+-- Section 9: Non-vacuity
 -- ============================================================
 
 /-- AES generic floor = 64 bits. -/

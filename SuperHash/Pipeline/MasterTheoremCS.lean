@@ -102,7 +102,14 @@ theorem extractPareto_all_correct_cs (g : EGraph CryptoOp) (weights : List Weigh
 set_option maxHeartbeats 800000 in
 /-- **Pipeline preserves semantic correctness in CryptoSemantics domain.**
     Every design in the pipeline output evaluates to the root value of the
-    saturated graph under CryptoSemantics (real cryptographic metrics). -/
+    saturated graph under CryptoSemantics (real cryptographic metrics).
+
+    **Key insight**: all designs extracted from the same e-class ARE semantically
+    equivalent — this is the fundamental e-graph invariant (congruence closure).
+    The e-graph merges expressions into the same e-class only when they are
+    proven equivalent by sound rewrite rules (see `PatternSoundRule`).
+    Therefore, optimization is over *cost* (latency, gate count), not security:
+    all designs in an e-class share the same CryptoSemantics value. -/
 theorem superhash_pipeline_correct_crypto
     (rules : List (PatternSoundRule CryptoOp CryptoSemantics))
     (g : EGraph CryptoOp)

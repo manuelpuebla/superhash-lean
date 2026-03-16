@@ -55,7 +55,7 @@ def optimizeF (fuel maxIter rebuildFuel : Nat)
 
 /-- PatternSoundRules imply PreservesCV for each rewrite rule.
     Factors the h_rules construction from saturateF_preserves_consistent_internal. -/
-private theorem patternSoundRules_preserveCV [Inhabited Val] (fuel : Nat) (env : Nat → Val)
+theorem patternSoundRules_preserveCV [Inhabited Val] (fuel : Nat) (env : Nat → Val)
     (rules : List (PatternSoundRule Op Val)) :
     ∀ rule ∈ rules.map (·.rule), PreservesCV env (applyRuleF fuel · rule) := by
   have hematch_bnd : ∀ (g' : EGraph Op) (rule : PatternSoundRule Op Val),

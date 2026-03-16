@@ -1472,4 +1472,82 @@ theorem consistent_valuation_step (g : EGraph Op) (env : Nat → Val)
     _ = NodeEval node env v2 := h_eq
     _ = v2 classId := h2
 
+-- ══════════════════════════════════════════════════════════════════
+-- v4.5.2 C3: Full v_sat canonicity for acyclic e-graphs
+-- ══════════════════════════════════════════════════════════════════
+
+/-- Full v_sat canonicity: if two consistent valuations exist for an acyclic e-graph,
+    they agree on all classes. Proof by strong induction on the AcyclicClassDAG rank.
+
+    Hypotheses:
+    - Two consistent valuations `v1`, `v2`
+    - `WellFormed` union-find (for root idempotence in `consistent_valuation_step`)
+    - `ChildrenBounded` (for boundedness of children in `consistent_valuation_step`)
+    - `AcyclicClassDAG` (ranking function with strict decrease on children)
+    - All classes are non-empty (have at least one node)
+    - Roots of children of nodes in classes have class entries (structural closure) -/
+theorem consistent_valuation_unique_acyclic (g : EGraph Op) (env : Nat → Val)
+    (v1 v2 : EClassId → Val)
+    (hcv1 : ConsistentValuation g env v1) (hcv2 : ConsistentValuation g env v2)
+    (hwf : WellFormed g.unionFind)
+    (hcb : ChildrenBounded g)
+    (hacyclic : AcyclicClassDAG g)
+    (hnonempty : ∀ rootId ec, g.classes.get? rootId = some ec → ec.nodes.toList ≠ [])
+    (hchildren_classes : ∀ rootId ec, g.classes.get? rootId = some ec →
+      ∀ nd, nd ∈ ec.nodes.toList → ∀ c, c ∈ nd.children →
+        ∃ ec', g.classes.get? (root g.unionFind c) = some ec') :
+    ∀ classId eclass, g.classes.get? classId = some eclass →
+      v1 classId = v2 classId := by
+  -- Extract the ranking function from acyclicity
+  obtain ⟨rank, hrank⟩ := hacyclic
+  -- Strong induction on rank: suffices to prove for all n ≥ rank classId
+  suffices h : ∀ n classId eclass, rank classId ≤ n →
+      g.classes.get? classId = some eclass → v1 classId = v2 classId by
+    intro classId eclass hget
+    exact h (rank classId) classId eclass (Nat.le_refl _) hget
+  intro n
+  induction n with
+  | zero =>
+    intro cid ec hr hget
+    -- rank cid = 0: get a node from the non-empty class
+    obtain ⟨node, rest, hlist_eq⟩ : ∃ h t, ec.nodes.toList = h :: t := by
+      cases hn : ec.nodes.toList with
+      | nil => exact absurd hn (hnonempty cid ec hget)
+      | cons h t => exact ⟨h, t, rfl⟩
+    have hnode : node ∈ ec.nodes.toList := by rw [hlist_eq]; exact .head _
+    -- All children have rank (root child) < rank cid = 0, but rank is Nat, so no children
+    -- exist (vacuously true). Apply consistent_valuation_step.
+    have hcb_node : ∀ child, child ∈ node.children → child < g.unionFind.parent.size :=
+      fun c hc => hcb cid ec hget node hnode c hc
+    have h_children : ∀ child, child ∈ node.children →
+        v1 (root g.unionFind child) = v2 (root g.unionFind child) := by
+      intro child hchild
+      -- rank (root child) < rank cid ≤ 0, contradiction since rank is Nat
+      have := hrank cid ec hget node hnode child hchild
+      omega
+    exact consistent_valuation_step g env v1 v2 hcv1 hcv2 hwf cid ec hget node hnode
+      hcb_node h_children
+  | succ k ih =>
+    intro cid ec hr hget
+    -- Get a node from the non-empty class
+    obtain ⟨node, rest, hlist_eq⟩ : ∃ h t, ec.nodes.toList = h :: t := by
+      cases hn : ec.nodes.toList with
+      | nil => exact absurd hn (hnonempty cid ec hget)
+      | cons h t => exact ⟨h, t, rfl⟩
+    have hnode : node ∈ ec.nodes.toList := by rw [hlist_eq]; exact .head _
+    -- Children are bounded
+    have hcb_node : ∀ child, child ∈ node.children → child < g.unionFind.parent.size :=
+      fun c hc => hcb cid ec hget node hnode c hc
+    -- For each child: rank(root child) < rank cid ≤ k + 1, so rank(root child) ≤ k
+    -- Apply IH for each child
+    have h_children : ∀ child, child ∈ node.children →
+        v1 (root g.unionFind child) = v2 (root g.unionFind child) := by
+      intro child hchild
+      have hrank_child := hrank cid ec hget node hnode child hchild
+      -- Get the class entry for root child
+      obtain ⟨ec', hget'⟩ := hchildren_classes cid ec hget node hnode child hchild
+      exact ih (root g.unionFind child) ec' (by omega) hget'
+    exact consistent_valuation_step g env v1 v2 hcv1 hcv2 hwf cid ec hget node hnode
+      hcb_node h_children
+
 end SuperHash

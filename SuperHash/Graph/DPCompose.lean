@@ -211,10 +211,16 @@ theorem dpMultiForget_wellformed (table : DPMultiTable) (v : Nat)
       exact insert_fresh_wellformed acc _ c h_acc (eq_false_of_ne_true h_not)
   · exact empty_wellformed
 
+/-- **dpMultiJoin preserves wellformedness (unique keys).**
+    The hypotheses `hl` and `hr` are API preconditions: they document that callers
+    must provide wellformed tables. The proof does NOT use `hl`/`hr` directly —
+    instead, the dedup guard (`acc'.entries.any (fun p => p.1 == baL)`) in
+    `dpMultiJoin`'s implementation provides defense-in-depth by preventing
+    duplicate keys in the output regardless of input wellformedness.
+    The proof proceeds by nested `foldl_preserves_wf` + `insert_fresh_wellformed`. -/
 theorem dpMultiJoin_wellformed (left right : DPMultiTable)
     (hl : left.wellformed) (hr : right.wellformed) :
     (dpMultiJoin left right).wellformed := by
-  -- hl/hr ensure inputs have unique keys; dedup guard handles the output.
   simp only [dpMultiJoin]
   apply foldl_preserves_wf
   · intro acc ⟨baL, cL⟩ h_acc
