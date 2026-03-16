@@ -110,9 +110,12 @@ instance : Inhabited CryptoSemantics where
 -- Section 4: Dominance relation (Pareto over CryptoSemantics)
 -- ============================================================
 
-/-- Security-aware dominance: design A dominates B if A is at least
-    as good in ALL security dimensions and strictly better in at least one.
-    Note: for δ and linearBias, LOWER is better. For the rest, HIGHER is better. -/
+/-- Pareto dominance over CryptoSemantics (8 dimensions).
+    NOTE: Mixes security metrics (algebraicDegree, differentialUniformity, linearBias,
+    branchNumber, activeMinSboxes) with performance metrics (latency, gateCount,
+    circuitDepth). This is intentional — multi-objective optimization simultaneously
+    considers security AND efficiency. When extracting designs, users may want to
+    filter the Pareto front by security threshold first, then optimize performance. -/
 def cryptoDominates (a b : CryptoSemantics) : Prop :=
   a.algebraicDegree ≥ b.algebraicDegree ∧
   a.differentialUniformity ≤ b.differentialUniformity ∧
@@ -194,9 +197,11 @@ def aes128Semantics : CryptoSemantics where
   circuitDepth := 40  -- 10 rounds × depth 4 (SubBytes + ShiftRows + MixColumns + AddRoundKey)
 
 /-- Poseidon-128 design as CryptoSemantics.
-    NOTE: δ=2 assumed from Grassi et al. 2019 for x^5 over Fp.
-    This is a prime-field-dependent value, not a universal APN property.
-    See poseidonSboxParams docstring for details. -/
+    NOTE: algebraicDegree uses naive α^R bound (5^8 = 390625), NOT BCD11.
+    Reason: BCD11 (Boura-Canteaut 2011) is designed for binary field GF(2^n) S-boxes.
+    Poseidon operates over prime field Fp where algebraic degree semantics differ.
+    The naive bound α^R is a conservative estimate for Fp.
+    δ=2 assumed for x^α over specific ZK primes (see poseidonSboxParams docstring). -/
 def poseidon128Semantics : CryptoSemantics where
   algebraicDegree := 5 ^ 8  -- full rounds only: 5^8 = 390625
   differentialUniformity := 2  -- APN

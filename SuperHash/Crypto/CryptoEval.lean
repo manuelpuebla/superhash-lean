@@ -107,11 +107,16 @@ def evalCryptoSem : CryptoOp → List CryptoSemantics → CryptoSemantics
       gateCount := child.gateCount + d + bn
       circuitDepth := child.circuitDepth + 2 }
 
-  -- Sequential composition (D15: degree MULTIPLIES, δ MULTIPLIES (product bound, Lai 1994), latency ADDS)
+  -- Sequential composition: product bounds for δ and ε are mathematically correct
+  -- but conservative. For SPNs with good diffusion, effective δ is much lower.
+  -- The fitness function min(birthday, differential, algebraic) naturally handles
+  -- this: when product bounds grow large, birthday becomes binding.
+  -- D15: degree MULTIPLIES, δ MULTIPLIES (product bound, Lai 1994), latency ADDS
   | .compose _ _, [f, s] =>
     { algebraicDegree := f.algebraicDegree * s.algebraicDegree
       differentialUniformity := f.differentialUniformity * s.differentialUniformity
-      linearBias := max f.linearBias s.linearBias
+      -- Piling-Up Lemma (Matsui 1993): product bound for sequential composition
+      linearBias := f.linearBias * s.linearBias
       branchNumber := min f.branchNumber s.branchNumber
       activeMinSboxes := f.activeMinSboxes + s.activeMinSboxes
       latency := f.latency + s.latency
@@ -129,11 +134,11 @@ def evalCryptoSem : CryptoOp → List CryptoSemantics → CryptoSemantics
       gateCount := l.gateCount + r.gateCount
       circuitDepth := max l.circuitDepth r.circuitDepth }
 
-  -- Iterate: n repetitions (degree = deg^n, active = n*base)
+  -- Iterate: n repetitions — consistent with compose: iterate(n, f) = compose(f, ..., f) n times
   | .iterate n _, [body] =>
     { algebraicDegree := safePow body.algebraicDegree n
-      differentialUniformity := body.differentialUniformity
-      linearBias := body.linearBias
+      differentialUniformity := safePow body.differentialUniformity n
+      linearBias := safePow body.linearBias n
       branchNumber := body.branchNumber
       activeMinSboxes := n * body.activeMinSboxes
       latency := n * body.latency
@@ -221,17 +226,17 @@ def evalCryptoSem : CryptoOp → List CryptoSemantics → CryptoSemantics
 #eval evalCryptoSem (.compose 0 0)
   [⟨7, 4, 16, 5, 1, 1, 7, 1⟩,   -- sbox output
    ⟨1, 0, 0, 5, 0, 1, 5, 1⟩]    -- linear output
--- Expected: {deg=7*1=7, δ=max(4,0)=4, BN=min(5,5)=5, active=1, lat=2, gates=12}
+-- Expected: {deg=7*1=7, δ=4*0=0, ε=16*0=0, BN=min(5,5)=5, active=1, lat=2, gates=12}
 
 -- Iterate 10 rounds: degree = 7^10 ≈ 2.8 × 10^8
 #eval evalCryptoSem (.iterate 10 0) [⟨7, 4, 16, 5, 1, 2, 12, 2⟩]
--- Expected: {deg=7^10=282475249, active=10, lat=20, gates=120}
+-- Expected: {deg=7^10=282475249, δ=4^10, ε=16^10, active=10, lat=20, gates=120}
 
 -- SPN block: 10 rounds of (sbox-7 ∘ linear-5)
 #eval evalCryptoSem (.spnBlock 10 0 0)
   [⟨7, 4, 16, 0, 1, 1, 7, 1⟩,    -- sbox child
    ⟨1, 0, 0, 5, 0, 1, 5, 1⟩]     -- linear child
--- deg = (7*1)^10 = 7^10, BN=5, active=10*(5+1)/2=30
+-- deg = (7*1)^10 = 7^10, BN=5, active=BN*R=5*10=50
 
 -- KEY DIFFERENCE from v2.0:
 -- v2.0: evalCryptoOp (.xor 0 1) [3, 5] = 8 (just 3+5)
@@ -269,5 +274,13 @@ def liftNat (n : Nat) : CryptoSemantics :=
 -- FALLBACK DETECTION: malformed nodes produce zero-security (degree=0 → fitness=0)
 #eval (evalCryptoSem (.compose 0 0) [liftNat 5]).algebraicDegree  -- 0 (only 1 child, needs 2)
 #eval (evalCryptoSem (.sbox 7 0) []).algebraicDegree              -- 0 (no children, needs 1)
+
+-- Consistency: compose(f, f) = iterate(2, f) for δ and ε
+#eval let f : CryptoSemantics := ⟨7, 4, 16, 5, 25, 10, 50, 40⟩
+      let compose_ff := evalCryptoSem (.compose 0 1) [f, f]
+      let iterate_2f := evalCryptoSem (.iterate 2 0) [f]
+      (compose_ff.differentialUniformity, iterate_2f.differentialUniformity,
+       compose_ff.linearBias, iterate_2f.linearBias)
+-- Should give (16, 16, 256, 256) — both 4² and 16²
 
 end SuperHash

@@ -81,7 +81,8 @@ def evalCryptoOpCS (op : CryptoOp) (_env : Nat → CryptoSemantics)
     let vf := v f; let vs := v s
     { algebraicDegree := vf.algebraicDegree * vs.algebraicDegree
       differentialUniformity := vf.differentialUniformity * vs.differentialUniformity
-      linearBias := max vf.linearBias vs.linearBias
+      -- Piling-Up Lemma (Matsui 1993): product bound for sequential composition
+      linearBias := vf.linearBias * vs.linearBias
       branchNumber := min vf.branchNumber vs.branchNumber
       activeMinSboxes := vf.activeMinSboxes + vs.activeMinSboxes
       latency := vf.latency + vs.latency
@@ -100,8 +101,9 @@ def evalCryptoOpCS (op : CryptoOp) (_env : Nat → CryptoSemantics)
   | .iterate n b =>
     let body := v b
     { algebraicDegree := safePow body.algebraicDegree n
-      differentialUniformity := body.differentialUniformity
-      linearBias := body.linearBias
+      -- Consistent with compose: iterate(n, f) = compose(f, ..., f) n times
+      differentialUniformity := safePow body.differentialUniformity n
+      linearBias := safePow body.linearBias n
       branchNumber := body.branchNumber
       activeMinSboxes := n * body.activeMinSboxes
       latency := n * body.latency
