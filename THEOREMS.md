@@ -1,6 +1,6 @@
 ═══ Specification Audit: superhash_lean ═══
-Theorems: 1076  Lemmas: 0  Pipeline: 74
-Clean: 958  T1(vacuity): 2  T1.5(identity): 0  T2(weak): 8  T3(structural): 16  T4(no-witness): 92
+Theorems: 1107  Lemmas: 0  Pipeline: 78
+Clean: 984  T1(vacuity): 2  T1.5(identity): 0  T2(weak): 11  T3(structural): 18  T4(no-witness): 92
 
 ── TIER 1 — VACUITY (2 issues) ──
   theorem zest_parallel_speedup
@@ -11,7 +11,19 @@ Clean: 958  T1(vacuity): 2  T1.5(identity): 0  T2(weak): 8  T3(structural): 16  
     SuperHash/Graph/DPCompose.lean:176
     ⚠ T1-UNUSED-ALL: all 2 parameters are _-prefixed — likely a stub or vacuous proof
 
-── TIER 2 — WEAK SPECS (8 issues) ──
+── TIER 2 — WEAK SPECS (11 issues) ──
+  theorem evalOp_ext_as
+    SuperHash/Attack/AttackNodeSemantics.lean:143
+    ⚠ T2-UNUSED-PARTIAL: 1/3 params are _-prefixed: ['_env']
+
+  theorem empty_bni_attack
+    SuperHash/Attack/AttackPipeline.lean:132
+    ⚠ T2-EXISTENTIAL-ONLY: conclusion is existential without equality/equivalence — may not reach concrete evaluation
+
+  theorem pipeline_duel [PIPELINE]
+    SuperHash/Attack/DuelTheorem.lean:55
+    ⚠ T2-UNUSED-PARTIAL: 1/6 params are _-prefixed: ['_h_coverage']
+
   theorem evalOp_ext_cs
     SuperHash/Crypto/CryptoNodeSemantics.lean:154
     ⚠ T2-UNUSED-PARTIAL: 1/3 params are _-prefixed: ['_env']
@@ -44,7 +56,16 @@ Clean: 958  T1(vacuity): 2  T1.5(identity): 0  T2(weak): 8  T3(structural): 16  
     SuperHash/Pipeline/EMatchSpec.lean:999
     ⚠ T2-PIPELINE-SORRY: pipeline theorem contains sorry — top-level result is unverified
 
-── TIER 3 — STRUCTURAL (16 issues) ──
+── TIER 3 — STRUCTURAL (18 issues) ──
+  theorem attack_extractF_correct [PIPELINE]
+    SuperHash/Attack/AttackPipeline.lean:62
+    ⚠ T3-MANY-HYPOTHESES: 11 hypotheses on pipeline theorem — verify each is satisfiable and necessary
+
+  theorem attack_pipeline_soundness [PIPELINE]
+    SuperHash/Attack/AttackPipeline.lean:90
+    ⚠ T3-NAME-MISMATCH: name contains 'sound' but conclusion has no equality, biconditional, or implication
+    ⚠ T3-MANY-HYPOTHESES: 9 hypotheses on pipeline theorem — verify each is satisfiable and necessary
+
   theorem branch_spectral_bridge [PIPELINE]
     SuperHash/Crypto/ExpanderBounds.lean:121
     ⚠ T2-UNUSED-PARTIAL: 2/3 params are _-prefixed: ['_hbn', '_hd']

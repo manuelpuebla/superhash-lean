@@ -54,6 +54,15 @@ def DesignLoopState.init (design : CryptoExpr) (fuel : Nat) : DesignLoopState :=
   }
 
 -- ============================================================
+-- Best security bits (v4.5.1 — N6)
+-- ============================================================
+
+/-- Maximum security bits across all designs in a Pareto front.
+    v4.5.1: used for quality-aware non-regression. -/
+def bestSecurityBits (front : List (CryptoExpr × SecurityMetrics)) : Nat :=
+  front.foldl (fun acc p => max acc p.2.securityBits) 0
+
+-- ============================================================
 -- Design loop step
 -- ============================================================
 
@@ -75,8 +84,10 @@ def designLoopStep (state : DesignLoopState) : DesignLoopState :=
     let g_sat := saturateF 10 5 3 state.graph satRules
     -- Extract new Pareto front
     let newPareto := extractParetoV2 g_sat standardCostSuite 20 state.rootId
-    -- Keep the better front (non-regression: prefer new if it has more points)
-    let bestPareto := if newPareto.length ≥ state.paretoFront.length
+    -- Keep the better front (non-regression: prefer new if more points AND better quality)
+    -- v4.5.1: quality-aware selection using bestSecurityBits
+    let bestPareto := if newPareto.length ≥ state.paretoFront.length ∧
+                         bestSecurityBits newPareto ≥ bestSecurityBits state.paretoFront
                       then newPareto else state.paretoFront
     { state with
       graph := g_sat

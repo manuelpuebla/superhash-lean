@@ -3,9 +3,10 @@ import SuperHash.DesignLoop.Core
 /-!
 # SuperHash.DesignLoop.Soundness — Design loop soundness properties (N3.8)
 
-v2.0: Proves key properties of the autonomous design loop:
+v2.0/v4.5.1: Proves key properties of the autonomous design loop:
 - Consistency preservation (each step preserves valid state)
-- Non-regression (Pareto quality doesn't decrease, D12)
+- Non-regression in SIZE (Pareto front length doesn't decrease, D12)
+- Non-regression in QUALITY (bestSecurityBits doesn't decrease, v4.5.1 N6)
 - Fuel decreasing (termination guarantee)
 -/
 
@@ -27,14 +28,34 @@ theorem designLoopStep_nonregression (state : DesignLoopState) :
   split
   · -- fuel = 0: state unchanged
     exact Nat.le_refl _
-  · -- fuel > 0: new front selected by length comparison
+  · -- fuel > 0: new front selected by length ∧ quality comparison
     rename_i fuel
     simp only []
     split
-    · -- newPareto.length ≥ state.paretoFront.length
-      rename_i h; exact h
+    · -- length ≥ AND quality ≥
+      rename_i h; exact h.1
     · -- kept old front
       exact Nat.le_refl _
+
+-- ============================================================
+-- Quality non-regression (v4.5.1 — N6)
+-- ============================================================
+
+/-- Best security bits does not decrease through the loop step.
+    v4.5.1: quality-aware non-regression — bestSecurityBits is non-decreasing.
+    Proof: the ∧ condition in designLoopStep ensures both length AND quality
+    must improve for the new front to be selected. -/
+theorem designLoopStep_best_nondecreasing (state : DesignLoopState) :
+    bestSecurityBits (designLoopStep state).paretoFront ≥
+    bestSecurityBits state.paretoFront := by
+  simp [designLoopStep]
+  split
+  · exact Nat.le_refl _
+  · rename_i fuel
+    simp only []
+    split
+    · rename_i h; exact h.2
+    · exact Nat.le_refl _
 
 -- ============================================================
 -- Round counter increases

@@ -37,7 +37,9 @@ namespace SuperHash
 -- Section 1: Duel state
 -- ============================================================
 
-/-- Joint state of the Blue Team (design) and Red Team (attack) co-evolution loop. -/
+/-- Joint state of the Blue Team (design) and Red Team (attack) co-evolution loop.
+    v4.5.1: added `blueSecurityLevel` and `redBestAttackCost` for
+    cross-team feedback (N7). -/
 structure DuelState where
   /-- Blue team: design E-graph state -/
   bluePool : List (RewriteRule CryptoOp)
@@ -52,6 +54,10 @@ structure DuelState where
   /-- Shared -/
   fuel : Nat
   round : Nat := 0
+  /-- v4.5.1 feedback: Blue's current best security level (for Red filtering) -/
+  blueSecurityLevel : Nat := 0
+  /-- v4.5.1 feedback: Red's cheapest attack cost (vulnerability indicator for Blue) -/
+  redBestAttackCost : Nat := 0
 
 -- ============================================================
 -- Section 2: Initialization
@@ -132,18 +138,28 @@ def duelStep (state : DuelState) : DuelState :=
     let newBluePareto := extractParetoV2 blueSat standardCostSuite 20 state.blueRootId
     let bestBluePareto := if newBluePareto.length ≥ state.blueParetoFront.length
                           then newBluePareto else state.blueParetoFront
+    -- v4.5.1 N7: Compute Blue security level from best Pareto front
+    let blueSecLevel := bestSecurityBits bestBluePareto
     -- === Red Team: saturate + extract ===
     let redSat := saturateF 10 5 3 state.redGraph state.redPool
     let rawRedCosts := extractRedTimeCosts redSat
+    -- v4.5.1 N7: Red filters — only attacks relevant to current security level
+    let relevantRedCosts := rawRedCosts.filter (· ≤ blueSecLevel * 2)
     -- Keep the better Red front (more attack options = more diverse)
-    let bestRedPareto := if rawRedCosts.length ≥ state.redParetoFront.length
-                         then rawRedCosts else state.redParetoFront
+    let bestRedPareto := if relevantRedCosts.length ≥ state.redParetoFront.length
+                         then relevantRedCosts else state.redParetoFront
+    -- v4.5.1 N7: Compute Red's cheapest attack cost
+    let redBestCost := match bestRedPareto with
+      | [] => blueSecLevel * 2  -- no attacks: cost = upper bound
+      | c :: rest => rest.foldl min c
     -- === Update state ===
     { state with
       blueGraph := blueSat
       blueParetoFront := bestBluePareto
+      blueSecurityLevel := blueSecLevel
       redGraph := redSat
       redParetoFront := bestRedPareto
+      redBestAttackCost := redBestCost
       fuel := fuel
       round := state.round + 1
     }

@@ -1,54 +1,107 @@
 import SuperHash.DesignLoop.Soundness
+import SuperHash.Pipeline.Saturate
 
 /-!
-# SuperHash.Pipeline.MasterTheoremV2 — v2.0 Master Theorem (N3.10)
+# SuperHash.Pipeline.MasterTheoremV2 — v2.0/v4.5.1 Master Theorem (N3.10)
 
-Bundles the v2.0 guarantees into a single master theorem:
+Bundles the v2.0 + v4.5.1 guarantees into a single master theorem:
 1. Termination: design loop always terminates (fuel-bounded)
-2. Non-regression: Pareto front quality doesn't decrease
-3. Rule pool soundness: all rules are kernel-verified
-4. Fuel exhaustion: final state has fuel = 0
+2. Pool soundness: all rules remain kernel-verified
+3. **Semantic correctness (v4.5.1 N5)**: a consistent valuation exists for the final e-graph
 
-Note: semantic correctness of individual extractions is guaranteed by
-v1.0's `pipeline_soundness` theorem, which remains unmodified (V2-C10).
+v4.5.1: Part 3 added via `saturateF_preserves_quadruple` by induction on fuel.
 -/
 
 namespace SuperHash
 
 -- ============================================================
--- Master Theorem v2.0
+-- Helpers
 -- ============================================================
 
-/-- SuperHash v2.0 Master Theorem.
+/-- Graph of designLoopStep: equals saturateF when fuel > 0. -/
+private theorem designLoopStep_graph_eq (state : DesignLoopState) (n : Nat)
+    (hf : state.fuel = n + 1) :
+    (designLoopStep state).graph =
+    saturateF 10 5 3 state.graph
+      (cryptoPatternRules.map (·.rule) ++ expansionRules) := by
+  simp [designLoopStep, hf]
+
+-- ============================================================
+-- Semantic preservation through the loop (v4.5.1 N5)
+-- ============================================================
+
+/-- DesignLoop preserves the existence of a consistent valuation.
+    v4.5.1 N5: by induction on fuel, applying saturateF_preserves_quadruple
+    at each designLoopStep. -/
+private theorem designLoop_preserves_cv (state : DesignLoopState)
+    (env : Nat → Nat) (v : EClassId → Nat)
+    (hcv : ConsistentValuation state.graph env v)
+    (hpmi : PostMergeInvariant state.graph)
+    (hshi : SemanticHashconsInv state.graph env v)
+    (hhcb : HashconsChildrenBounded state.graph)
+    (h_rules : ∀ rule ∈ (cryptoPatternRules.map (·.rule) ++ expansionRules :
+        List (RewriteRule CryptoOp)), PreservesCV env (applyRuleF 10 · rule)) :
+    ∃ v', ConsistentValuation (designLoop state).graph env v' := by
+  unfold designLoop
+  split
+  · -- fuel = 0: state unchanged
+    exact ⟨v, hcv⟩
+  · -- fuel = n+1: step + recurse
+    rename_i fuel heq
+    -- Step: saturateF preserves quadruple
+    have h_graph := designLoopStep_graph_eq state fuel heq
+    obtain ⟨v', hcv', hpmi', hshi', hhcb'⟩ :=
+      saturateF_preserves_quadruple 10 5 3 state.graph
+        (cryptoPatternRules.map (·.rule) ++ expansionRules)
+        env v hcv hpmi hshi hhcb h_rules
+    -- Rewrite to reference (designLoopStep state).graph
+    rw [← h_graph] at hcv' hpmi' hshi' hhcb'
+    -- Recurse (fuel decreases strictly)
+    exact designLoop_preserves_cv (designLoopStep state) env v' hcv' hpmi' hshi' hhcb' h_rules
+termination_by state.fuel
+decreasing_by
+  simp_wf
+  exact designLoopStep_fuel_decreasing state (by omega)
+
+-- ============================================================
+-- Master Theorem v2.0/v4.5.1
+-- ============================================================
+
+/-- SuperHash v2.0/v4.5.1 Master Theorem.
 
     Given an initial design loop state with:
     - A rule pool where all rules are verified (pool soundness)
-    - A valid initial Pareto front
+    - A consistent valuation for the initial e-graph (v4.5.1)
+    - Rules that preserve consistent valuation
 
     The design loop guarantees:
     1. **Termination**: final fuel = 0 (loop always completes)
-    2. **Non-regression**: final Pareto front ≥ initial in size
-    3. **Pool soundness**: all rules remain kernel-verified
-    4. **v1.0 compatibility**: existing pipeline_soundness still holds
--/
+    2. **Pool soundness**: all rules remain kernel-verified
+    3. **Semantic correctness (v4.5.1 N5)**: a consistent valuation exists
+       for the final e-graph -/
 theorem designLoop_master (state : DesignLoopState)
     (h_pool_sound : ∀ vr ∈ state.pool.rules, ∀ env : Nat → Nat,
-      vr.candidate.lhsTemplate.eval env = vr.candidate.rhsTemplate.eval env) :
+      vr.candidate.lhsTemplate.eval env = vr.candidate.rhsTemplate.eval env)
+    (env : Nat → Nat) (v : EClassId → Nat)
+    (h_cv : ConsistentValuation state.graph env v)
+    (h_pmi : PostMergeInvariant state.graph)
+    (h_shi : SemanticHashconsInv state.graph env v)
+    (h_hcb : HashconsChildrenBounded state.graph)
+    (h_rules : ∀ rule ∈ (cryptoPatternRules.map (·.rule) ++ expansionRules :
+        List (RewriteRule CryptoOp)), PreservesCV env (applyRuleF 10 · rule)) :
     -- Part 1: Termination
     (designLoop state).fuel = 0 ∧
-    -- Part 2: Pool soundness preserved (pool is not modified by loop)
-    (∀ vr ∈ (designLoop state).pool.rules, ∀ env : Nat → Nat,
-      vr.candidate.lhsTemplate.eval env = vr.candidate.rhsTemplate.eval env) := by
-  constructor
-  · -- Part 1: Termination
-    exact designLoop_fuel_zero state
-  · -- Part 2: Pool soundness (pool unchanged through loop)
-    intro vr hvr env
-    -- Pool is preserved through the loop (each step preserves it)
-    have h_preserve : (designLoop state).pool = state.pool :=
-      designLoop_pool_eq state
-    rw [h_preserve] at hvr
-    exact h_pool_sound vr hvr env
+    -- Part 2: Pool soundness preserved
+    (∀ vr ∈ (designLoop state).pool.rules, ∀ env' : Nat → Nat,
+      vr.candidate.lhsTemplate.eval env' = vr.candidate.rhsTemplate.eval env') ∧
+    -- Part 3: Semantic correctness (v4.5.1 N5)
+    (∃ v_sat, ConsistentValuation (designLoop state).graph env v_sat) := by
+  refine ⟨?_, ?_, ?_⟩
+  · exact designLoop_fuel_zero state
+  · intro vr hvr env'
+    rw [designLoop_pool_eq state] at hvr
+    exact h_pool_sound vr hvr env'
+  · exact designLoop_preserves_cv state env v h_cv h_pmi h_shi h_hcb h_rules
 
 -- ============================================================
 -- Convenience: run and verify

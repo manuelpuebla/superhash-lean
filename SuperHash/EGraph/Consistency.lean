@@ -1421,4 +1421,55 @@ theorem rebuildStepBody_preserves_triple (g : EGraph Op)
     (g.worklist ++ g.dirtyArr.toList) env v
     hcv (clear_worklist_pmi g hpmi) (clear_worklist_shi g env v hshi)
 
+-- ══════════════════════════════════════════════════════════════════
+-- v4.5.1 N8: v_sat canonicity (DE-RISK sketch)
+-- ══════════════════════════════════════════════════════════════════
+
+/-- Acyclicity of the class DAG: there exists a ranking function on root IDs
+    such that children of any node in a class have strictly lower rank.
+    This is the structural precondition for proving uniqueness of consistent
+    valuations. In practice, e-graphs post-rebuild satisfy this because
+    the union-find hierarchy prevents cycles. -/
+def AcyclicClassDAG (g : EGraph Op) : Prop :=
+  ∃ rank : EClassId → Nat, ∀ rootId eclass,
+    g.classes.get? rootId = some eclass →
+    ∀ node, node ∈ eclass.nodes.toList →
+    ∀ child, child ∈ node.children →
+      rank (root g.unionFind child) < rank rootId
+
+/-- **Inductive step for v_sat canonicity.**
+    If two consistent valuations agree on the roots of all children of a node
+    in a class, then they agree on the class itself.
+    Requires WellFormed (for root_idempotent) and ChildrenBounded.
+    This is the key building block for the full uniqueness theorem. -/
+theorem consistent_valuation_step (g : EGraph Op) (env : Nat → Val)
+    (v1 v2 : EClassId → Val)
+    (hcv1 : ConsistentValuation g env v1) (hcv2 : ConsistentValuation g env v2)
+    (hwf : WellFormed g.unionFind)
+    (classId : EClassId) (eclass : EClass Op)
+    (hget : g.classes.get? classId = some eclass)
+    (node : ENode Op) (hnode : node ∈ eclass.nodes.toList)
+    (hcb : ∀ child, child ∈ node.children → child < g.unionFind.parent.size)
+    (h_children : ∀ child, child ∈ node.children →
+      v1 (root g.unionFind child) = v2 (root g.unionFind child)) :
+    v1 classId = v2 classId := by
+  -- v1 classId = NodeEval node env v1 (from consistency)
+  have h1 := hcv1.2 classId eclass hget node hnode
+  have h2 := hcv2.2 classId eclass hget node hnode
+  -- Bridge: v(child) = v(root child) via consistency + idempotence
+  have h_direct : ∀ child, child ∈ node.children → v1 child = v2 child := by
+    intro c hc
+    have hbnd := hcb c hc
+    -- v1 c = v1 (root c) by consistency (root c = root (root c) by idempotence)
+    have hv1 := hcv1.1 c (root g.unionFind c) (root_idempotent g.unionFind c hwf hbnd).symm
+    have hv2 := hcv2.1 c (root g.unionFind c) (root_idempotent g.unionFind c hwf hbnd).symm
+    calc v1 c = v1 (root g.unionFind c) := hv1
+      _ = v2 (root g.unionFind c) := h_children c hc
+      _ = v2 c := hv2.symm
+  -- NodeEval agrees when children agree
+  have h_eq := nodeEval_children_eq node env v1 v2 h_direct
+  calc v1 classId = NodeEval node env v1 := h1.symm
+    _ = NodeEval node env v2 := h_eq
+    _ = v2 classId := h2
+
 end SuperHash

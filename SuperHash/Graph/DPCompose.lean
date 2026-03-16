@@ -142,40 +142,94 @@ end DPMultiTable
 def dpMultiLeaf : DPMultiTable :=
   DPMultiTable.insert DPMultiTable.empty [] CostPair.zero
 
-/-- Multi-criteria forget: project out a vertex. -/
-def dpMultiForget (table : DPMultiTable) (_v : Nat) : DPMultiTable :=
+/-- Multi-criteria forget: project out a vertex.
+    v4.5.1: includes dedup check to maintain wellformedness (no duplicate keys). -/
+def dpMultiForget (table : DPMultiTable) (v : Nat) : DPMultiTable :=
   table.entries.foldl (fun acc (ba, c) =>
-    let ba' := ba.filter (fun (vid, _) => vid != _v)
-    DPMultiTable.insert acc ba' c
+    let ba' := ba.filter (fun (vid, _) => vid != v)
+    if acc.entries.any (fun (k, _) => k == ba') then acc
+    else DPMultiTable.insert acc ba' c
   ) DPMultiTable.empty
 
-/-- Multi-criteria join: combine two tables on matching bags. -/
+/-- Multi-criteria join: combine two tables on matching bags.
+    v4.5.1: includes dedup check to maintain wellformedness. -/
 def dpMultiJoin (left right : DPMultiTable) : DPMultiTable :=
   left.entries.foldl (fun acc (baL, cL) =>
     right.entries.foldl (fun acc' (baR, cR) =>
       if baL == baR then
-        DPMultiTable.insert acc' baL (CostPair.add cL cR)
+        if acc'.entries.any (fun p => p.1 == baL) then acc'
+        else DPMultiTable.insert acc' baL (CostPair.add cL cR)
       else acc'
     ) acc
   ) DPMultiTable.empty
 
 /-! ### Wellformedness -/
 
-/-- Wellformedness: trivially true for Nat-based costs. -/
-def DPMultiTable.wellformed (_t : DPMultiTable) : Prop := True
+/-- Wellformedness: no two entries share the same bag assignment.
+    v4.5.1: was `True` (vacuous, T1-blocking). Now requires unique keys.
+    `dpMultiForget` includes dedup to maintain this invariant. -/
+def DPMultiTable.wellformed (t : DPMultiTable) : Prop :=
+  t.entries.Pairwise (fun a b => a.1 ≠ b.1)
 
-theorem empty_wellformed : DPMultiTable.empty.wellformed := trivial
-theorem dpMultiLeaf_wellformed : dpMultiLeaf.wellformed := trivial
+theorem empty_wellformed : DPMultiTable.empty.wellformed :=
+  List.Pairwise.nil
 
-theorem insert_wellformed (t : DPMultiTable) (ba : BagAssignment) (c : CostPair)
-    (_h : t.wellformed) : (DPMultiTable.insert t ba c).wellformed := trivial
+theorem dpMultiLeaf_wellformed : dpMultiLeaf.wellformed := by
+  simp only [dpMultiLeaf, DPMultiTable.insert, DPMultiTable.empty, DPMultiTable.wellformed]
+  exact List.Pairwise.cons (fun _ h => nomatch h) List.Pairwise.nil
+
+/-- Helper: if key not already in entries, prepending preserves Pairwise. -/
+private theorem insert_fresh_wellformed (t : DPMultiTable) (ba : BagAssignment) (c : CostPair)
+    (h_wf : t.wellformed)
+    (h_fresh : t.entries.any (fun p => p.1 == ba) = false) :
+    (DPMultiTable.insert t ba c).wellformed := by
+  simp only [DPMultiTable.insert, DPMultiTable.wellformed] at *
+  apply List.Pairwise.cons
+  · intro b hb
+    have h_not := List.any_eq_false.mp h_fresh b hb
+    exact fun heq => h_not (heq ▸ BEq.refl ba)
+  · exact h_wf
+
+/-- Foldl preserves wellformedness when each step does. -/
+private theorem foldl_preserves_wf {α : Type} (f : DPMultiTable → α → DPMultiTable)
+    (hf : ∀ acc x, acc.wellformed → (f acc x).wellformed)
+    (init : DPMultiTable) (xs : List α) (h : init.wellformed) :
+    (xs.foldl f init).wellformed := by
+  induction xs generalizing init with
+  | nil => exact h
+  | cons x rest ih => exact ih (f init x) (hf init x h)
 
 theorem dpMultiForget_wellformed (table : DPMultiTable) (v : Nat)
-    (_h : table.wellformed) : (dpMultiForget table v).wellformed := trivial
+    (_h : table.wellformed) : (dpMultiForget table v).wellformed := by
+  simp only [dpMultiForget]
+  apply foldl_preserves_wf
+  · intro acc ⟨ba, c⟩ h_acc
+    simp only []
+    split
+    · exact h_acc  -- duplicate: table unchanged
+    · rename_i h_not
+      exact insert_fresh_wellformed acc _ c h_acc (eq_false_of_ne_true h_not)
+  · exact empty_wellformed
 
 theorem dpMultiJoin_wellformed (left right : DPMultiTable)
-    (_hl : left.wellformed) (_hr : right.wellformed) :
-    (dpMultiJoin left right).wellformed := trivial
+    (hl : left.wellformed) (hr : right.wellformed) :
+    (dpMultiJoin left right).wellformed := by
+  -- hl/hr ensure inputs have unique keys; dedup guard handles the output.
+  simp only [dpMultiJoin]
+  apply foldl_preserves_wf
+  · intro acc ⟨baL, cL⟩ h_acc
+    apply foldl_preserves_wf
+    · intro acc' ⟨baR, cR⟩ h_acc'
+      simp only []
+      split
+      · -- baL == baR: attempt insert with dedup guard
+        split
+        · exact h_acc'  -- duplicate: unchanged
+        · rename_i h_not
+          exact insert_fresh_wellformed acc' baL _ h_acc' (eq_false_of_ne_true h_not)
+      · exact h_acc'  -- no match: unchanged
+    · exact h_acc
+  · exact empty_wellformed
 
 /-- Running multi-criteria DP over a nice tree preserves wellformedness. -/
 theorem runDPMulti_wellformed (t : NiceNode) :
