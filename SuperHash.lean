@@ -32,6 +32,8 @@ import SuperHash.Discovery.RuleVerifier
 import SuperHash.Discovery.RulePool
 import SuperHash.Concrete.BitVecOps
 import SuperHash.Concrete.Bridge
+import SuperHash.Concrete.GF2_4
+import SuperHash.Concrete.SboxAlgebraic
 import SuperHash.SmoothE.CostModel
 import SuperHash.SmoothE.Extract
 import SuperHash.DesignLoop.Core
@@ -61,6 +63,7 @@ import SuperHash.TrustHash.Verdict
 import SuperHash.Rules.CryptoRulesCS
 import SuperHash.Pipeline.MasterTheoremCS
 import SuperHash.Rules.ExpansionRules
+import SuperHash.Rules.SubstitutionRules
 import SuperHash.Crypto.ExpanderBounds
 -- v3.3 Phase 1: S-box computation foundation
 import SuperHash.Sbox.Bitwise

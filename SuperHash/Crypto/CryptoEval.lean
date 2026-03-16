@@ -70,7 +70,8 @@ def evalCryptoSem : CryptoOp → List CryptoSemantics → CryptoSemantics
       branchNumber := child.branchNumber
       activeMinSboxes := child.activeMinSboxes + 1  -- this S-box is active
       latency := child.latency + 1
-      gateCount := child.gateCount + d }  -- gates proportional to degree
+      gateCount := child.gateCount + d  -- gates proportional to degree
+      circuitDepth := child.circuitDepth + 1 }
 
   -- Linear layer: sets branch number (diffusion)
   | .linear bn _, [child] =>
@@ -80,7 +81,8 @@ def evalCryptoSem : CryptoOp → List CryptoSemantics → CryptoSemantics
       branchNumber := bn  -- MDS branch number
       activeMinSboxes := child.activeMinSboxes
       latency := child.latency + 1
-      gateCount := child.gateCount + bn }
+      gateCount := child.gateCount + bn
+      circuitDepth := child.circuitDepth + 1 }
 
   -- XOR: parallel group operation. Degree = max (no interaction between branches).
   -- Active S-boxes = max (both branches share the same S-box layer, not independent).
@@ -91,7 +93,8 @@ def evalCryptoSem : CryptoOp → List CryptoSemantics → CryptoSemantics
       branchNumber := min l.branchNumber r.branchNumber  -- weakest link
       activeMinSboxes := max l.activeMinSboxes r.activeMinSboxes  -- parallel, not additive
       latency := max l.latency r.latency + 1  -- XOR is fast
-      gateCount := l.gateCount + r.gateCount + 1 }
+      gateCount := l.gateCount + r.gateCount + 1
+      circuitDepth := max l.circuitDepth r.circuitDepth + 1 }
 
   -- Round: one SPN round = sbox(d) ∘ linear(bn)
   | .round d bn _, [child] =>
@@ -101,7 +104,8 @@ def evalCryptoSem : CryptoOp → List CryptoSemantics → CryptoSemantics
       branchNumber := bn
       activeMinSboxes := child.activeMinSboxes + 1
       latency := child.latency + 2  -- sbox + linear
-      gateCount := child.gateCount + d + bn }
+      gateCount := child.gateCount + d + bn
+      circuitDepth := child.circuitDepth + 2 }
 
   -- Sequential composition (D15: degree MULTIPLIES, latency ADDS)
   | .compose _ _, [f, s] =>
@@ -111,7 +115,8 @@ def evalCryptoSem : CryptoOp → List CryptoSemantics → CryptoSemantics
       branchNumber := min f.branchNumber s.branchNumber
       activeMinSboxes := f.activeMinSboxes + s.activeMinSboxes
       latency := f.latency + s.latency
-      gateCount := f.gateCount + s.gateCount }
+      gateCount := f.gateCount + s.gateCount
+      circuitDepth := f.circuitDepth + s.circuitDepth }
 
   -- Parallel (D15: degree = MAX, latency = MAX)
   | .parallel _ _, [l, r] =>
@@ -121,7 +126,8 @@ def evalCryptoSem : CryptoOp → List CryptoSemantics → CryptoSemantics
       branchNumber := min l.branchNumber r.branchNumber
       activeMinSboxes := l.activeMinSboxes + r.activeMinSboxes
       latency := max l.latency r.latency
-      gateCount := l.gateCount + r.gateCount }
+      gateCount := l.gateCount + r.gateCount
+      circuitDepth := max l.circuitDepth r.circuitDepth }
 
   -- Iterate: n repetitions (degree = deg^n, active = n*base)
   | .iterate n _, [body] =>
@@ -131,7 +137,8 @@ def evalCryptoSem : CryptoOp → List CryptoSemantics → CryptoSemantics
       branchNumber := body.branchNumber
       activeMinSboxes := n * body.activeMinSboxes
       latency := n * body.latency
-      gateCount := n * body.gateCount }
+      gateCount := n * body.gateCount
+      circuitDepth := n * body.circuitDepth }
 
   -- Constant: no security properties
   | .const v, [] =>
@@ -141,7 +148,8 @@ def evalCryptoSem : CryptoOp → List CryptoSemantics → CryptoSemantics
       branchNumber := 0
       activeMinSboxes := 0
       latency := 0
-      gateCount := 0 }
+      gateCount := 0
+      circuitDepth := 0 }
 
   -- SPN Block: compositional (r rounds of sbox+linear)
   | .spnBlock r _ _, [sboxChild, linearChild] =>
@@ -151,7 +159,8 @@ def evalCryptoSem : CryptoOp → List CryptoSemantics → CryptoSemantics
       branchNumber := linearChild.branchNumber
       activeMinSboxes := r * (mds_branchNumber linearChild.branchNumber) / 2
       latency := r * (sboxChild.latency + linearChild.latency)
-      gateCount := r * (sboxChild.gateCount + linearChild.gateCount) }
+      gateCount := r * (sboxChild.gateCount + linearChild.gateCount)
+      circuitDepth := r * (sboxChild.circuitDepth + linearChild.circuitDepth) }
 
   -- Feistel Block: r rounds of round function
   | .feistelBlock r _, [fChild] =>
@@ -161,7 +170,8 @@ def evalCryptoSem : CryptoOp → List CryptoSemantics → CryptoSemantics
       branchNumber := fChild.branchNumber
       activeMinSboxes := r * fChild.activeMinSboxes
       latency := r * fChild.latency
-      gateCount := r * fChild.gateCount }
+      gateCount := r * fChild.gateCount
+      circuitDepth := r * fChild.circuitDepth }
 
   -- Sponge Block: absorption (rate) + capacity.
   -- Capacity provides isolation: effective δ is min(perm δ, 2^cap) since
@@ -175,7 +185,8 @@ def evalCryptoSem : CryptoOp → List CryptoSemantics → CryptoSemantics
       branchNumber := permChild.branchNumber
       activeMinSboxes := rt * permChild.activeMinSboxes
       latency := rt * permChild.latency + cap
-      gateCount := rt * permChild.gateCount }
+      gateCount := rt * permChild.gateCount
+      circuitDepth := rt * permChild.circuitDepth }
 
   -- ARX Block: add-rotate-xor rounds
   | .arxBlock r _ _ _, [addChild, rotChild, xorChild] =>
@@ -185,7 +196,8 @@ def evalCryptoSem : CryptoOp → List CryptoSemantics → CryptoSemantics
       branchNumber := min addChild.branchNumber (min rotChild.branchNumber xorChild.branchNumber)
       activeMinSboxes := r * (addChild.activeMinSboxes + rotChild.activeMinSboxes + xorChild.activeMinSboxes)
       latency := r * (addChild.latency + rotChild.latency + xorChild.latency)
-      gateCount := r * (addChild.gateCount + rotChild.gateCount + xorChild.gateCount) }
+      gateCount := r * (addChild.gateCount + rotChild.gateCount + xorChild.gateCount)
+      circuitDepth := r * (addChild.circuitDepth + rotChild.circuitDepth + xorChild.circuitDepth) }
 
   -- FALLBACK: malformed node (wrong child count). Returns zero-security design.
   -- In production, unreachable if NodeOps.children provides correct arity.
@@ -198,23 +210,23 @@ def evalCryptoSem : CryptoOp → List CryptoSemantics → CryptoSemantics
 
 -- An S-box with degree 7 operating on a constant with degree 1
 -- produces degree 7*1 = 7 and adds 1 active S-box
-#eval evalCryptoSem (.sbox 7 0) [⟨1, 4, 16, 5, 0, 0, 0⟩]
+#eval evalCryptoSem (.sbox 7 0) [⟨1, 4, 16, 5, 0, 0, 0, 0⟩]
 -- Expected: {deg=7, δ=4, ε=16, BN=5, active=1, lat=1, gates=7}
 
 -- Sequential compose: degree multiplies!
 #eval evalCryptoSem (.compose 0 0)
-  [⟨7, 4, 16, 5, 1, 1, 7⟩,   -- sbox output
-   ⟨1, 0, 0, 5, 0, 1, 5⟩]    -- linear output
+  [⟨7, 4, 16, 5, 1, 1, 7, 1⟩,   -- sbox output
+   ⟨1, 0, 0, 5, 0, 1, 5, 1⟩]    -- linear output
 -- Expected: {deg=7*1=7, δ=max(4,0)=4, BN=min(5,5)=5, active=1, lat=2, gates=12}
 
 -- Iterate 10 rounds: degree = 7^10 ≈ 2.8 × 10^8
-#eval evalCryptoSem (.iterate 10 0) [⟨7, 4, 16, 5, 1, 2, 12⟩]
+#eval evalCryptoSem (.iterate 10 0) [⟨7, 4, 16, 5, 1, 2, 12, 2⟩]
 -- Expected: {deg=7^10=282475249, active=10, lat=20, gates=120}
 
 -- SPN block: 10 rounds of (sbox-7 ∘ linear-5)
 #eval evalCryptoSem (.spnBlock 10 0 0)
-  [⟨7, 4, 16, 0, 1, 1, 7⟩,    -- sbox child
-   ⟨1, 0, 0, 5, 0, 1, 5⟩]     -- linear child
+  [⟨7, 4, 16, 0, 1, 1, 7, 1⟩,    -- sbox child
+   ⟨1, 0, 0, 5, 0, 1, 5, 1⟩]     -- linear child
 -- deg = (7*1)^10 = 7^10, BN=5, active=10*(5+1)/2=30
 
 -- KEY DIFFERENCE from v2.0:
@@ -238,7 +250,8 @@ def liftNat (n : Nat) : CryptoSemantics :=
     branchNumber := 0
     activeMinSboxes := 0
     latency := 0
-    gateCount := 0 }
+    gateCount := 0
+    circuitDepth := 0 }
 
 -- Verify: v2.0's evalCryptoOp(.sbox 7 0) [10] = 70
 -- v2.5's projectToNat(evalCryptoSem(.sbox 7 0) [liftNat 10]) should be 7*10 = 70

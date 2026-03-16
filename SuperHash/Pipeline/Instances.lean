@@ -206,7 +206,8 @@ def CryptoExpr.evalCS (e : CryptoExpr) (env : Nat → CryptoSemantics) : CryptoS
       branchNumber := child.branchNumber
       activeMinSboxes := child.activeMinSboxes + 1
       latency := child.latency + 1
-      gateCount := child.gateCount + d }
+      gateCount := child.gateCount + d
+      circuitDepth := child.circuitDepth + 1 }
   | .linear bn c =>
     let child := c.evalCS env
     { algebraicDegree := child.algebraicDegree
@@ -215,7 +216,8 @@ def CryptoExpr.evalCS (e : CryptoExpr) (env : Nat → CryptoSemantics) : CryptoS
       branchNumber := bn
       activeMinSboxes := child.activeMinSboxes
       latency := child.latency + 1
-      gateCount := child.gateCount + bn }
+      gateCount := child.gateCount + bn
+      circuitDepth := child.circuitDepth + 1 }
   | .xor l r =>
     let vl := l.evalCS env; let vr := r.evalCS env
     { algebraicDegree := max vl.algebraicDegree vr.algebraicDegree
@@ -224,7 +226,8 @@ def CryptoExpr.evalCS (e : CryptoExpr) (env : Nat → CryptoSemantics) : CryptoS
       branchNumber := min vl.branchNumber vr.branchNumber
       activeMinSboxes := max vl.activeMinSboxes vr.activeMinSboxes
       latency := max vl.latency vr.latency + 1
-      gateCount := vl.gateCount + vr.gateCount + 1 }
+      gateCount := vl.gateCount + vr.gateCount + 1
+      circuitDepth := max vl.circuitDepth vr.circuitDepth + 1 }
   | .round d bn c =>
     let child := c.evalCS env
     { algebraicDegree := d * child.algebraicDegree
@@ -233,7 +236,8 @@ def CryptoExpr.evalCS (e : CryptoExpr) (env : Nat → CryptoSemantics) : CryptoS
       branchNumber := bn
       activeMinSboxes := child.activeMinSboxes + 1
       latency := child.latency + 2
-      gateCount := child.gateCount + d + bn }
+      gateCount := child.gateCount + d + bn
+      circuitDepth := child.circuitDepth + 2 }
   | .compose f s =>
     let vf := f.evalCS env; let vs := s.evalCS env
     { algebraicDegree := vf.algebraicDegree * vs.algebraicDegree
@@ -242,7 +246,8 @@ def CryptoExpr.evalCS (e : CryptoExpr) (env : Nat → CryptoSemantics) : CryptoS
       branchNumber := min vf.branchNumber vs.branchNumber
       activeMinSboxes := vf.activeMinSboxes + vs.activeMinSboxes
       latency := vf.latency + vs.latency
-      gateCount := vf.gateCount + vs.gateCount }
+      gateCount := vf.gateCount + vs.gateCount
+      circuitDepth := vf.circuitDepth + vs.circuitDepth }
   | .parallel l r =>
     let vl := l.evalCS env; let vr := r.evalCS env
     { algebraicDegree := max vl.algebraicDegree vr.algebraicDegree
@@ -251,7 +256,8 @@ def CryptoExpr.evalCS (e : CryptoExpr) (env : Nat → CryptoSemantics) : CryptoS
       branchNumber := min vl.branchNumber vr.branchNumber
       activeMinSboxes := vl.activeMinSboxes + vr.activeMinSboxes
       latency := max vl.latency vr.latency
-      gateCount := vl.gateCount + vr.gateCount }
+      gateCount := vl.gateCount + vr.gateCount
+      circuitDepth := max vl.circuitDepth vr.circuitDepth }
   | .iterate n b =>
     let body := b.evalCS env
     { algebraicDegree := safePow body.algebraicDegree n
@@ -260,7 +266,8 @@ def CryptoExpr.evalCS (e : CryptoExpr) (env : Nat → CryptoSemantics) : CryptoS
       branchNumber := body.branchNumber
       activeMinSboxes := n * body.activeMinSboxes
       latency := n * body.latency
-      gateCount := n * body.gateCount }
+      gateCount := n * body.gateCount
+      circuitDepth := n * body.circuitDepth }
   | .const val =>
     { algebraicDegree := val
       differentialUniformity := 0
@@ -268,7 +275,8 @@ def CryptoExpr.evalCS (e : CryptoExpr) (env : Nat → CryptoSemantics) : CryptoS
       branchNumber := 0
       activeMinSboxes := 0
       latency := 0
-      gateCount := 0 }
+      gateCount := 0
+      circuitDepth := 0 }
   | .var id => env id
   | .spnBlock r s l =>
     let vs := s.evalCS env; let vl := l.evalCS env
@@ -278,7 +286,8 @@ def CryptoExpr.evalCS (e : CryptoExpr) (env : Nat → CryptoSemantics) : CryptoS
       branchNumber := vl.branchNumber
       activeMinSboxes := r * (mds_branchNumber vl.branchNumber) / 2
       latency := r * (vs.latency + vl.latency)
-      gateCount := r * (vs.gateCount + vl.gateCount) }
+      gateCount := r * (vs.gateCount + vl.gateCount)
+      circuitDepth := r * (vs.circuitDepth + vl.circuitDepth) }
   | .feistelBlock r f =>
     let vf := f.evalCS env
     { algebraicDegree := safePow vf.algebraicDegree r
@@ -287,7 +296,8 @@ def CryptoExpr.evalCS (e : CryptoExpr) (env : Nat → CryptoSemantics) : CryptoS
       branchNumber := vf.branchNumber
       activeMinSboxes := r * vf.activeMinSboxes
       latency := r * vf.latency
-      gateCount := r * vf.gateCount }
+      gateCount := r * vf.gateCount
+      circuitDepth := r * vf.circuitDepth }
   | .spongeBlock rt cap p =>
     let vp := p.evalCS env
     { algebraicDegree := safePow vp.algebraicDegree rt
@@ -298,7 +308,8 @@ def CryptoExpr.evalCS (e : CryptoExpr) (env : Nat → CryptoSemantics) : CryptoS
       branchNumber := vp.branchNumber
       activeMinSboxes := rt * vp.activeMinSboxes
       latency := rt * vp.latency + cap
-      gateCount := rt * vp.gateCount }
+      gateCount := rt * vp.gateCount
+      circuitDepth := rt * vp.circuitDepth }
   | .arxBlock r a rot x =>
     let va := a.evalCS env; let vrot := rot.evalCS env; let vx := x.evalCS env
     { algebraicDegree := safePow (va.algebraicDegree + vrot.algebraicDegree + vx.algebraicDegree) r
@@ -307,7 +318,8 @@ def CryptoExpr.evalCS (e : CryptoExpr) (env : Nat → CryptoSemantics) : CryptoS
       branchNumber := min va.branchNumber (min vrot.branchNumber vx.branchNumber)
       activeMinSboxes := r * (va.activeMinSboxes + vrot.activeMinSboxes + vx.activeMinSboxes)
       latency := r * (va.latency + vrot.latency + vx.latency)
-      gateCount := r * (va.gateCount + vrot.gateCount + vx.gateCount) }
+      gateCount := r * (va.gateCount + vrot.gateCount + vx.gateCount)
+      circuitDepth := r * (va.circuitDepth + vrot.circuitDepth + vx.circuitDepth) }
 
 instance : EvalExpr CryptoExpr CryptoSemantics where
   evalExpr := CryptoExpr.evalCS

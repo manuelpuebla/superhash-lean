@@ -24,6 +24,21 @@ specifies an LHS/RHS pattern over AttackOp nodes for E-graph rewriting.
 5. **impossibleExtend**: compose(impossible(r),diffChar(p)) extends roundsCovered
    Domain-specific — extending impossible differential with a characteristic.
 
+6. **slideDecompose**: compose(x,y) = slideAttack(1,x)
+   Composition — slide attack decomposes into iteration composition.
+
+7. **integralFromZeroSum**: zeroSumPartition(d,x) = integralAttack(d,x)
+   Reduction — zero-sum implies integral distinguisher (Todo 2015).
+
+8. **cubeLinearize**: cubeAttack(d,x) = algebraicRelation(d,x)
+   Reduction — cube attack recovers algebraic relation (Dinur-Shamir 2009).
+
+9. **divisionToIntegral**: divisionProperty(bs,x) = integralAttack(bs,x)
+   Reduction — division property feeds integral attack (Todo 2015).
+
+10. **invariantWeakKey**: invariantSubspace(bs,x) = const(0)
+    Reduction — invariant subspace yields constant-cost weak-key distinguisher.
+
 ## Design
 
 All rules are provided as `RewriteRule AttackOp` (syntactic patterns).
@@ -116,12 +131,61 @@ def impossibleExtend (r p : Nat) : RewriteRule AttackOp where
   -- requires domain-specific AttackNodeSemantics proofs.
 
 -- ============================================================
+-- Section 2b: Composition / reduction rewrite rules (v4.5.4 B3)
+-- ============================================================
+
+/-- Rule 6: slideDecompose — slide can compose with iteration.
+    slide(period=1, x) via compose(x, iterate(1, x)):
+    a slide attack decomposes into composing the cipher with an iterated copy. -/
+private def slideDecomposeRule : RewriteRule AttackOp where
+  name := "slideDecompose"
+  lhs := .node (.compose 0 1) [.patVar 0, .patVar 1]
+  rhs := .node (.slideAttack 1 0) [.patVar 0]
+
+/-- Rule 7: integralFromZeroSum — zero-sum property implies integral distinguisher.
+    zeroSumPartition(dim, x) rewrites to integralAttack(dim, x):
+    a zero-sum partition of dimension d directly yields an integral distinguisher
+    of the same dimension (Knudsen 2002, Todo 2015). -/
+private def integralFromZeroSumRule : RewriteRule AttackOp where
+  name := "integralFromZeroSum"
+  lhs := .node (.zeroSumPartition 0 1) [.patVar 0]
+  rhs := .node (.integralAttack 0 1) [.patVar 0]
+
+/-- Rule 8: cubeLinearize — cube attack reduces to algebraic relation.
+    cubeAttack(dim, x) rewrites to algebraicRelation(dim, x):
+    cube attack of dimension d recovers a degree-d algebraic relation
+    (Dinur-Shamir 2009). -/
+private def cubeLinearizeRule : RewriteRule AttackOp where
+  name := "cubeLinearize"
+  lhs := .node (.cubeAttack 0 1) [.patVar 0]
+  rhs := .node (.algebraicRelation 0 1) [.patVar 0]
+
+/-- Rule 9: divisionToIntegral — division property feeds integral attack.
+    divisionProperty(bs, x) rewrites to integralAttack(bs, x):
+    division property of block size bs yields an integral distinguisher
+    (Todo 2015, generalized integral via division property). -/
+private def divisionToIntegralRule : RewriteRule AttackOp where
+  name := "divisionToIntegral"
+  lhs := .node (.divisionProperty 0 1) [.patVar 0]
+  rhs := .node (.integralAttack 0 1) [.patVar 0]
+
+/-- Rule 10: invariantWeakKey — invariant subspace reduces to constant cost.
+    invariantSubspace(bs, x) rewrites to const(0):
+    if an invariant subspace exists, the attack has constant cost
+    (Leander et al. 2011, weak-key distinguisher). -/
+private def invariantWeakKeyRule : RewriteRule AttackOp where
+  name := "invariantWeakKey"
+  lhs := .node (.invariantSubspace 0 1) [.patVar 0]
+  rhs := .node (.const 0) []
+
+-- ============================================================
 -- Section 3: Collected rules
 -- ============================================================
 
 /-- All attack rewrite rules collected for saturation.
-    Includes structural rules (1-2) with concrete parameters
-    and domain-specific rules (3-5) with common parameter values. -/
+    Includes structural rules (1-2) with concrete parameters,
+    domain-specific rules (3-5) with common parameter values,
+    and composition/reduction rules (6-10) from v4.5.4 B3. -/
 def attackRewriteRules : List (RewriteRule AttackOp) :=
   [ -- Rule 1: compose associativity
     composeAssocAttack,
@@ -139,7 +203,17 @@ def attackRewriteRules : List (RewriteRule AttackOp) :=
     -- Rule 5: impossible differential extension (common configs)
     impossibleExtend 4 6,  -- 4-round impossible + prob 2^{-6}
     impossibleExtend 5 6,  -- 5-round impossible + prob 2^{-6}
-    impossibleExtend 6 8   -- 6-round impossible + prob 2^{-8}
+    impossibleExtend 6 8,  -- 6-round impossible + prob 2^{-8}
+    -- Rule 6: slide decompose (v4.5.4 B3)
+    slideDecomposeRule,
+    -- Rule 7: zero-sum → integral (v4.5.4 B3)
+    integralFromZeroSumRule,
+    -- Rule 8: cube → algebraic relation (v4.5.4 B3)
+    cubeLinearizeRule,
+    -- Rule 9: division property → integral (v4.5.4 B3)
+    divisionToIntegralRule,
+    -- Rule 10: invariant subspace → const (v4.5.4 B3)
+    invariantWeakKeyRule
   ]
 
 -- ============================================================
@@ -152,7 +226,7 @@ theorem attackRewriteRules_named :
   native_decide
 
 /-- Rule list has expected length. -/
-theorem attackRewriteRules_length : attackRewriteRules.length = 12 := by
+theorem attackRewriteRules_length : attackRewriteRules.length = 17 := by
   native_decide
 
 -- ============================================================
@@ -168,8 +242,8 @@ example : (iterateComposeAttack 2 5).rhs = .node (.iterate 10 0) [.patVar 0] := 
 /-- Non-vacuity 3: boomerangDecompose has two-child LHS. -/
 example : boomerangDecompose.lhs = .node (.boomerang 0 1) [.patVar 0, .patVar 1] := rfl
 
-/-- Non-vacuity 4: list length is correct (12 rules). -/
-example : attackRewriteRules.length = 12 := by native_decide
+/-- Non-vacuity 4: list length is correct (17 rules). -/
+example : attackRewriteRules.length = 17 := by native_decide
 
 /-- Non-vacuity 5: linearAggregate has the expected hull size. -/
 example : (linearAggregate 7).rhs =
@@ -178,8 +252,23 @@ example : (linearAggregate 7).rhs =
 /-- Non-vacuity 6: impossibleExtend preserves structure. -/
 example : (impossibleExtend 4 6).name = "impossibleExtend_4_6" := rfl
 
+/-- Non-vacuity 7: slideDecomposeRule has correct name. -/
+example : slideDecomposeRule.name = "slideDecompose" := rfl
+
+/-- Non-vacuity 8: integralFromZeroSumRule rewrites to integralAttack. -/
+example : integralFromZeroSumRule.rhs = .node (.integralAttack 0 1) [.patVar 0] := rfl
+
+/-- Non-vacuity 9: cubeLinearizeRule rewrites to algebraicRelation. -/
+example : cubeLinearizeRule.rhs = .node (.algebraicRelation 0 1) [.patVar 0] := rfl
+
+/-- Non-vacuity 10: divisionToIntegralRule rewrites to integralAttack. -/
+example : divisionToIntegralRule.rhs = .node (.integralAttack 0 1) [.patVar 0] := rfl
+
+/-- Non-vacuity 11: invariantWeakKeyRule rewrites to const 0. -/
+example : invariantWeakKeyRule.rhs = .node (.const 0) [] := rfl
+
 -- Smoke tests
-#eval attackRewriteRules.length  -- 12
+#eval attackRewriteRules.length  -- 17
 #eval (attackRewriteRules.map (·.name))
 
 end SuperHash

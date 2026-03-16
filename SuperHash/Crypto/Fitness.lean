@@ -100,6 +100,7 @@ def poseidon128_65rounds : CryptoSemantics where
   activeMinSboxes := 16
   latency := 65
   gateCount := 195
+  circuitDepth := 65
 
 #eval evaluateDesign poseidon128Config poseidon128_65rounds
 -- 128 (secure: birthday-bounded)
@@ -131,8 +132,8 @@ def evaluateCryptoOp (cfg : DesignConfig) (op : CryptoOp) (children : List Crypt
 
 -- Pipeline demo: evaluate an SPN block
 #eval evaluateCryptoOp aes128Config (.spnBlock 10 0 0)
-  [⟨7, 4, 16, 0, 1, 1, 7⟩,    -- S-box child: deg=7, δ=4
-   ⟨1, 0, 0, 5, 0, 1, 5⟩]     -- linear child: BN=5
+  [⟨7, 4, 16, 0, 1, 1, 7, 1⟩,    -- S-box child: deg=7, δ=4
+   ⟨1, 0, 0, 5, 0, 1, 5, 1⟩]     -- linear child: BN=5
 
 -- ============================================================
 -- Section 6: Non-vacuity
@@ -145,7 +146,7 @@ example : evaluateDesign aes128Config aes128Semantics = 64 := by native_decide
 example : evaluateDesign poseidon128Config poseidon128Semantics = 54 := by native_decide
 
 /-- Non-vacuity: trivial design (deg=1) has fitness = 0. -/
-example : fitness 128 8 5 ⟨1, 4, 16, 5, 25, 10, 50⟩ = 0 := by native_decide
+example : fitness 128 8 5 ⟨1, 4, 16, 5, 25, 10, 50, 40⟩ = 0 := by native_decide
 
 /-- Non-vacuity: the fitness function correctly identifies that
     Poseidon needs ≥65 rounds for 128-bit security. -/

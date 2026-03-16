@@ -154,7 +154,7 @@ example : (evalCryptoSem (.sbox 7 0) [evalCryptoSem (.sbox 7 0) [liftNat 1]]).al
 
 /-- Non-vacuity: iterate active S-boxes for AES (10 rounds, 1 active/round).
     10 rounds × 1 active = 10 active S-boxes. -/
-example : (evalCryptoSem (.iterate 10 0) [⟨7, 4, 16, 5, 1, 2, 12⟩]).activeMinSboxes = 10 := by
+example : (evalCryptoSem (.iterate 10 0) [⟨7, 4, 16, 5, 1, 2, 12, 2⟩]).activeMinSboxes = 10 := by
   native_decide
 
 /-- Non-vacuity: sbox_substitute with d2=7 ≥ d1=5.

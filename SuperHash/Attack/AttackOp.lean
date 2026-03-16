@@ -11,7 +11,7 @@ for the Blue Team.
 Five major attack families: differential, linear, algebraic, structural, hybrid.
 
 ## AttackOp
-Fourteen constructors representing composable cryptanalytic building blocks.
+Twenty constructors representing composable cryptanalytic building blocks (v4.5.4).
 Each child field is a `Nat` (E-class id) referencing another node
 in the E-graph.
 
@@ -41,8 +41,12 @@ inductive AttackClass where
 -- ============================================================
 
 /-- E-graph node operations for cryptanalytic attack composition.
-    Each constructor represents a composable attack building block.
-    Convention: metadata parameters first, then E-class id children. -/
+    Twenty constructors representing composable cryptanalytic building blocks.
+    Each child field is a `Nat` (E-class id) referencing another node
+    in the E-graph.
+    Convention: metadata parameters first, then E-class id children.
+    v4.5.4: added slideAttack, integralAttack, cubeAttack,
+    zeroSumPartition, invariantSubspace, divisionProperty. -/
 inductive AttackOp where
   -- Differential family
   | diffChar (prob : Nat) (child : Nat)
@@ -63,6 +67,13 @@ inductive AttackOp where
   | parallel (left right : Nat)
   | iterate (n : Nat) (body : Nat)
   | const (cost : Nat)
+  -- v4.5.4: Advanced attack models (adapted from TrustHash v5.0)
+  | slideAttack (period : Nat) (child : Nat)
+  | integralAttack (distinguisherDim : Nat) (child : Nat)
+  | cubeAttack (cubeDim : Nat) (child : Nat)
+  | zeroSumPartition (partitionDim : Nat) (child : Nat)
+  | invariantSubspace (basisSize : Nat) (child : Nat)
+  | divisionProperty (blockSize : Nat) (child : Nat)
   deriving Repr, DecidableEq, Hashable
 
 /-- BEq via DecidableEq (ensures LawfulBEq compatibility). -/
@@ -109,6 +120,12 @@ def AttackOp.children : AttackOp → List EClassId
   | .parallel l r => [l, r]
   | .iterate _ b => [b]
   | .const _ => []
+  | .slideAttack _ c => [c]
+  | .integralAttack _ c => [c]
+  | .cubeAttack _ c => [c]
+  | .zeroSumPartition _ c => [c]
+  | .invariantSubspace _ c => [c]
+  | .divisionProperty _ c => [c]
 
 /-- Apply a function to all child E-class IDs. -/
 def AttackOp.mapChildren (f : EClassId → EClassId) : AttackOp → AttackOp
@@ -126,6 +143,12 @@ def AttackOp.mapChildren (f : EClassId → EClassId) : AttackOp → AttackOp
   | .parallel l r => .parallel (f l) (f r)
   | .iterate n b => .iterate n (f b)
   | .const v => .const v
+  | .slideAttack p c => .slideAttack p (f c)
+  | .integralAttack d c => .integralAttack d (f c)
+  | .cubeAttack d c => .cubeAttack d (f c)
+  | .zeroSumPartition d c => .zeroSumPartition d (f c)
+  | .invariantSubspace bs c => .invariantSubspace bs (f c)
+  | .divisionProperty bs c => .divisionProperty bs (f c)
 
 /-- Replace children positionally. -/
 def AttackOp.replaceChildren : AttackOp → List EClassId → AttackOp
@@ -143,6 +166,12 @@ def AttackOp.replaceChildren : AttackOp → List EClassId → AttackOp
   | .parallel _ _, l :: r :: _ => .parallel l r
   | .iterate n _, b :: _ => .iterate n b
   | .const v, _ => .const v
+  | .slideAttack p _, c :: _ => .slideAttack p c
+  | .integralAttack d _, c :: _ => .integralAttack d c
+  | .cubeAttack d _, c :: _ => .cubeAttack d c
+  | .zeroSumPartition d _, c :: _ => .zeroSumPartition d c
+  | .invariantSubspace bs _, c :: _ => .invariantSubspace bs c
+  | .divisionProperty bs _, c :: _ => .divisionProperty bs c
   | op, _ => op  -- fallback: return unchanged
 
 /-- Local cost of an AttackOp (not including children). -/
@@ -161,6 +190,12 @@ def AttackOp.localCost : AttackOp → Nat
   | .parallel _ _ => 0          -- parallel is free
   | .iterate n _ => n           -- cost proportional to iterations
   | .const _ => 0
+  | .slideAttack period _ => period          -- slide period as cost
+  | .integralAttack dim _ => dim             -- distinguisher dimension
+  | .cubeAttack dim _ => dim                 -- cube dimension
+  | .zeroSumPartition dim _ => dim           -- partition dimension
+  | .invariantSubspace bs _ => bs            -- basis size
+  | .divisionProperty bs _ => bs             -- block size
 
 -- ============================================================
 -- Section 4: Law proofs
@@ -192,6 +227,12 @@ private theorem replaceChildren_children_proof (op : AttackOp) (ids : List EClas
   | .parallel _ _, [l, r], _ => rfl
   | .iterate n _, [b], _ => rfl
   | .const v, [], _ => rfl
+  | .slideAttack p _, [c], _ => rfl
+  | .integralAttack d _, [c], _ => rfl
+  | .cubeAttack d _, [c], _ => rfl
+  | .zeroSumPartition d _, [c], _ => rfl
+  | .invariantSubspace bs _, [c], _ => rfl
+  | .divisionProperty bs _, [c], _ => rfl
 
 private theorem replaceChildren_sameShape_proof (op : AttackOp) (ids : List EClassId)
     (h : ids.length = op.children.length) :
@@ -212,6 +253,12 @@ private theorem replaceChildren_sameShape_proof (op : AttackOp) (ids : List ECla
   | .parallel _ _, [l, r], _ => rfl
   | .iterate n _, [b], _ => rfl
   | .const v, [], _ => rfl
+  | .slideAttack p _, [c], _ => rfl
+  | .integralAttack d _, [c], _ => rfl
+  | .cubeAttack d _, [c], _ => rfl
+  | .zeroSumPartition d _, [c], _ => rfl
+  | .invariantSubspace bs _, [c], _ => rfl
+  | .divisionProperty bs _, [c], _ => rfl
 
 instance : NodeOps AttackOp where
   children := AttackOp.children
@@ -234,5 +281,10 @@ instance : NodeOps AttackOp where
 #eval AttackOp.children (.rebound 3 4 0)            -- [0]
 #eval AttackOp.mapChildren (· + 100) (.boomerang 1 2)  -- boomerang 101 102
 #eval AttackOp.mapChildren (· + 100) (.meetInMiddle 5 0 1)  -- meetInMiddle 5 100 101
+
+-- v4.5.4 smoke tests
+#eval AttackOp.children (.slideAttack 5 42)          -- [42]
+#eval AttackOp.children (.integralAttack 8 10)       -- [10]
+#eval AttackOp.children (.zeroSumPartition 12 3)     -- [3]
 
 end SuperHash

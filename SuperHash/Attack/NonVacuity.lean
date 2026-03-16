@@ -105,8 +105,8 @@ example : metricsDominates diffAttackAES6 bruteForce5 :=
 -- Section 4: attackRewriteRules is non-empty
 -- ============================================================
 
-/-- The attack rewrite rule list has exactly 12 rules. -/
-example : attackRewriteRules.length = 12 := by native_decide
+/-- The attack rewrite rule list has exactly 17 rules. -/
+example : attackRewriteRules.length = 17 := by native_decide
 
 /-- All attack rules have non-empty names. -/
 example : ∀ r ∈ attackRewriteRules, r.name ≠ "" := by native_decide

@@ -42,6 +42,13 @@ inductive AttackExpr where
   | parallel (left right : AttackExpr)
   | iterate (n : Nat) (body : AttackExpr)
   | const (cost : Nat)
+  -- v4.5.4: Advanced attack models
+  | slideAttack (period : Nat) (child : AttackExpr)
+  | integralAttack (distinguisherDim : Nat) (child : AttackExpr)
+  | cubeAttack (cubeDim : Nat) (child : AttackExpr)
+  | zeroSumPartition (partitionDim : Nat) (child : AttackExpr)
+  | invariantSubspace (basisSize : Nat) (child : AttackExpr)
+  | divisionProperty (blockSize : Nat) (child : AttackExpr)
   -- External variable
   | var (id : Nat)
 
@@ -152,6 +159,48 @@ def AttackExpr.eval (e : AttackExpr) (env : Nat → AttackSemantics) : AttackSem
       dataCost := 0
       successProb := 0
       roundsCovered := 0 }
+  | .slideAttack period c =>
+    let child := c.eval env
+    { timeCost := child.timeCost + period
+      memoryCost := child.memoryCost + period
+      dataCost := child.dataCost + period
+      successProb := child.successProb
+      roundsCovered := child.roundsCovered }
+  | .integralAttack dim c =>
+    let child := c.eval env
+    { timeCost := child.timeCost + dim
+      memoryCost := child.memoryCost + dim
+      dataCost := child.dataCost + dim
+      successProb := child.successProb
+      roundsCovered := child.roundsCovered + 1 }
+  | .cubeAttack dim c =>
+    let child := c.eval env
+    { timeCost := child.timeCost + dim * dim
+      memoryCost := child.memoryCost + dim
+      dataCost := child.dataCost + dim
+      successProb := child.successProb
+      roundsCovered := child.roundsCovered + 1 }
+  | .zeroSumPartition dim c =>
+    let child := c.eval env
+    { timeCost := child.timeCost + dim
+      memoryCost := child.memoryCost + dim
+      dataCost := child.dataCost + dim
+      successProb := child.successProb
+      roundsCovered := child.roundsCovered + 1 }
+  | .invariantSubspace bs c =>
+    let child := c.eval env
+    { timeCost := child.timeCost + bs
+      memoryCost := child.memoryCost
+      dataCost := child.dataCost
+      successProb := child.successProb + bs
+      roundsCovered := child.roundsCovered }
+  | .divisionProperty bs c =>
+    let child := c.eval env
+    { timeCost := child.timeCost + bs
+      memoryCost := child.memoryCost + bs
+      dataCost := child.dataCost
+      successProb := child.successProb
+      roundsCovered := child.roundsCovered + 1 }
   | .var id => env id
 
 -- ============================================================
@@ -175,6 +224,12 @@ def reconstructAttack (op : AttackOp) (children : List AttackExpr) : Option Atta
   | .parallel _ _ => match children with | [l, r] => some (.parallel l r) | _ => none
   | .iterate n _ => match children with | [b] => some (.iterate n b) | _ => none
   | .const v => match children with | [] => some (.const v) | _ => none
+  | .slideAttack p _ => match children with | [c] => some (.slideAttack p c) | _ => none
+  | .integralAttack d _ => match children with | [c] => some (.integralAttack d c) | _ => none
+  | .cubeAttack d _ => match children with | [c] => some (.cubeAttack d c) | _ => none
+  | .zeroSumPartition d _ => match children with | [c] => some (.zeroSumPartition d c) | _ => none
+  | .invariantSubspace bs _ => match children with | [c] => some (.invariantSubspace bs c) | _ => none
+  | .divisionProperty bs _ => match children with | [c] => some (.divisionProperty bs c) | _ => none
 
 -- ============================================================
 -- Section 4: Typeclass instances

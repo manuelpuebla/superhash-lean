@@ -143,6 +143,7 @@ private def matchingSemantics : CryptoSemantics where
   activeMinSboxes := 25
   latency := 10
   gateCount := 50
+  circuitDepth := 40
 
 /-- Concrete env mapping vars to calibrated semantics. -/
 private def testEnv : Nat → CryptoSemantics := fun _ => matchingSemantics

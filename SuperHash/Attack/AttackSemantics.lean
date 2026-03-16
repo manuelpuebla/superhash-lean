@@ -210,6 +210,54 @@ def evalAttackSem : AttackOp → List AttackSemantics → AttackSemantics
       successProb := 0
       roundsCovered := 0 }
 
+  -- Slide attack: exploits key-schedule periodicity
+  | .slideAttack period _, [child] =>
+    { timeCost := child.timeCost + period
+      memoryCost := child.memoryCost + period
+      dataCost := child.dataCost + period
+      successProb := child.successProb
+      roundsCovered := child.roundsCovered }
+
+  -- Integral attack: higher-order differential distinguisher
+  | .integralAttack dim _, [child] =>
+    { timeCost := child.timeCost + dim
+      memoryCost := child.memoryCost + dim
+      dataCost := child.dataCost + dim
+      successProb := child.successProb
+      roundsCovered := child.roundsCovered + 1 }
+
+  -- Cube attack: algebraic key-recovery via cube summation
+  | .cubeAttack dim _, [child] =>
+    { timeCost := child.timeCost + dim * dim
+      memoryCost := child.memoryCost + dim
+      dataCost := child.dataCost + dim
+      successProb := child.successProb
+      roundsCovered := child.roundsCovered + 1 }
+
+  -- Zero-sum partition: distinguisher via zero-sum subsets
+  | .zeroSumPartition dim _, [child] =>
+    { timeCost := child.timeCost + dim
+      memoryCost := child.memoryCost + dim
+      dataCost := child.dataCost + dim
+      successProb := child.successProb
+      roundsCovered := child.roundsCovered + 1 }
+
+  -- Invariant subspace: exploits algebraic invariants
+  | .invariantSubspace bs _, [child] =>
+    { timeCost := child.timeCost + bs
+      memoryCost := child.memoryCost
+      dataCost := child.dataCost
+      successProb := child.successProb + bs
+      roundsCovered := child.roundsCovered }
+
+  -- Division property: bit-based integral distinguisher
+  | .divisionProperty bs _, [child] =>
+    { timeCost := child.timeCost + bs
+      memoryCost := child.memoryCost + bs
+      dataCost := child.dataCost
+      successProb := child.successProb
+      roundsCovered := child.roundsCovered + 1 }
+
   -- FALLBACK: malformed node (wrong child count).
   | _, _ => default
 
@@ -281,8 +329,33 @@ def boomerangExample : AttackSemantics where
    ⟨18, 12, 6, 3, 4⟩]
 -- Expected: {time=24, mem=22, data=8, prob=8, rounds=8}
 
+-- slideAttack: period=4
+#eval evalAttackSem (.slideAttack 4 0) [⟨10, 5, 5, 8, 3⟩]
+-- Expected: {time=14, mem=9, data=9, prob=8, rounds=3}
+
+-- integralAttack: dim=8
+#eval evalAttackSem (.integralAttack 8 0) [⟨10, 5, 5, 8, 3⟩]
+-- Expected: {time=18, mem=13, data=13, prob=8, rounds=4}
+
+-- cubeAttack: dim=4
+#eval evalAttackSem (.cubeAttack 4 0) [⟨10, 5, 5, 8, 3⟩]
+-- Expected: {time=26, mem=9, data=9, prob=8, rounds=4}
+
+-- zeroSumPartition: dim=6
+#eval evalAttackSem (.zeroSumPartition 6 0) [⟨10, 5, 5, 8, 3⟩]
+-- Expected: {time=16, mem=11, data=11, prob=8, rounds=4}
+
+-- invariantSubspace: bs=3
+#eval evalAttackSem (.invariantSubspace 3 0) [⟨10, 5, 5, 8, 3⟩]
+-- Expected: {time=13, mem=5, data=5, prob=11, rounds=3}
+
+-- divisionProperty: bs=5
+#eval evalAttackSem (.divisionProperty 5 0) [⟨10, 5, 5, 8, 3⟩]
+-- Expected: {time=15, mem=10, data=5, prob=8, rounds=4}
+
 -- FALLBACK DETECTION: malformed nodes produce zero-cost (default)
 #eval (evalAttackSem (.compose 0 0) [⟨5, 5, 5, 5, 1⟩]).timeCost  -- 0 (needs 2 children)
 #eval (evalAttackSem (.diffChar 6 0) []).timeCost                   -- 0 (needs 1 child)
+#eval (evalAttackSem (.slideAttack 4 0) []).timeCost                -- 0 (needs 1 child)
 
 end SuperHash

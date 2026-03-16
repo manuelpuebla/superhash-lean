@@ -10,7 +10,7 @@ Connects the Blue Team (CryptoSemantics/SecurityMetrics) and Red Team
 
 ## Key insight (v4.5.1 — Correccion 1)
 The defense security level is computed from `computeFullVerdict` (Blue perspective).
-The attack cost lower bound is computed independently as the minimum of 5 attack models
+The attack cost lower bound is computed independently as the minimum of 8 attack models
 (Red perspective). The bridge theorem `defense_eq_attack_bound` proves these coincide
 via structural unfolding — NOT by `rfl`.
 
@@ -20,6 +20,9 @@ via structural unfolding — NOT by `rfl`.
 - Algebraic: BCD11 + treewidth
 - DP: tree decomposition
 - Higher-order: iterated degree queries
+- Slide: periodic structure (v4.5.4 B4)
+- Integral: division property propagation (v4.5.4 B4)
+- Invariant subspace: linear subspace stability (v4.5.4 B4)
 
 ## Definitions
 - `defenseSecurityLevel spec`: security level from Blue Team perspective
@@ -65,21 +68,38 @@ def dpAttackCost (spec : HashSpec) : Nat := dpCost spec
     Depends on iterated degree after R rounds. -/
 def higherOrderAttackCost (spec : HashSpec) : Nat := higherOrderCost spec
 
+/-- **Slide attack cost**: exploits periodic structure.
+    Depends only on output bits (no slide vulnerability for standard constructions). -/
+def slideAttackCost (spec : HashSpec) : Nat := slideCost spec
+
+/-- **Integral attack cost**: via division property propagation.
+    Depends on algebraic degree after R rounds. -/
+def integralAttackCost (spec : HashSpec) : Nat := integralCost spec
+
+/-- **Invariant subspace attack cost**: exploits linear subspace stability.
+    Depends only on output bits (conservative). -/
+def invariantSubspaceAttackCost (spec : HashSpec) : Nat := invariantSubspaceCost spec
+
 /-- **Attack cost lower bound from Red Team perspective.**
-    Minimum of 5 independent attack models. Defined independently from
+    Minimum of 8 independent attack models. Defined independently from
     `defenseSecurityLevel` — the bridge theorem proves they coincide. -/
 def attackCostLowerBound (spec : HashSpec) : Nat :=
   min (bruteForceAttackCost spec)
     (min (differentialAttackCost spec)
       (min (algebraicAttackCost spec)
-        (min (dpAttackCost spec) (higherOrderAttackCost spec))))
+        (min (dpAttackCost spec)
+          (min (higherOrderAttackCost spec)
+            (min (slideAttackCost spec)
+              (min (integralAttackCost spec) (invariantSubspaceAttackCost spec)))))))
 
 /-- Verdict security equals the min of genericFloor and all structural costs.
     Used as a stepping stone for the bridge theorem. -/
 private theorem verdict_security_unfold (spec : HashSpec) :
     (computeFullVerdict spec).security =
     min (genericFloor spec) (min (differentialCost spec)
-      (min (algebraicCost spec) (min (dpCost spec) (higherOrderCost spec)))) := rfl
+      (min (algebraicCost spec) (min (dpCost spec)
+        (min (higherOrderCost spec) (min (slideCost spec)
+          (min (integralCost spec) (invariantSubspaceCost spec))))))) := rfl
 
 /-- **THE bridge theorem**: defense security level = attack cost lower bound.
     Both sides compute the same min over independent cost models, but are
@@ -92,16 +112,18 @@ private theorem verdict_security_unfold (spec : HashSpec) :
     4. Observe that `gbpBound = birthdayBound` (both are `outputBits/2`)
     5. Conclude by `omega` on the simplified `min` expression
 
-    Each attack model (brute-force, differential, algebraic, DP, higher-order) contributes
-    independently to both sides. The bridge holds because the verdict and the attack
-    cost lower bound compute the same min over the same 5 cost functions, differing
-    only in the generic floor factorization (`min(birthday, gbp)` vs. `birthday`). -/
+    Each attack model (brute-force, differential, algebraic, DP, higher-order,
+    slide, integral, invariant-subspace) contributes independently to both sides.
+    The bridge holds because the verdict and the attack cost lower bound compute
+    the same min over the same 8 cost functions, differing only in the generic
+    floor factorization (`min(birthday, gbp)` vs. `birthday`). -/
 theorem defense_eq_attack_bound (spec : HashSpec) :
     defenseSecurityLevel spec = attackCostLowerBound spec := by
   -- Step 1: Unfold both sides to constituent cost functions
   simp only [defenseSecurityLevel, attackCostLowerBound,
     bruteForceAttackCost, differentialAttackCost, algebraicAttackCost,
-    dpAttackCost, higherOrderAttackCost]
+    dpAttackCost, higherOrderAttackCost, slideAttackCost,
+    integralAttackCost, invariantSubspaceAttackCost]
   -- Step 2: Rewrite defense side via verdict_security_unfold
   rw [verdict_security_unfold]
   -- Step 3-4: genericFloor = min(birthday, gbp) where gbp = birthday

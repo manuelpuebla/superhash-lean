@@ -45,7 +45,8 @@ def evalCryptoOpCS (op : CryptoOp) (_env : Nat → CryptoSemantics)
       branchNumber := child.branchNumber
       activeMinSboxes := child.activeMinSboxes + 1
       latency := child.latency + 1
-      gateCount := child.gateCount + d }
+      gateCount := child.gateCount + d
+      circuitDepth := child.circuitDepth + 1 }
   | .linear bn c =>
     let child := v c
     { algebraicDegree := child.algebraicDegree
@@ -54,7 +55,8 @@ def evalCryptoOpCS (op : CryptoOp) (_env : Nat → CryptoSemantics)
       branchNumber := bn
       activeMinSboxes := child.activeMinSboxes
       latency := child.latency + 1
-      gateCount := child.gateCount + bn }
+      gateCount := child.gateCount + bn
+      circuitDepth := child.circuitDepth + 1 }
   | .xor l r =>
     let vl := v l; let vr := v r
     { algebraicDegree := max vl.algebraicDegree vr.algebraicDegree
@@ -63,7 +65,8 @@ def evalCryptoOpCS (op : CryptoOp) (_env : Nat → CryptoSemantics)
       branchNumber := min vl.branchNumber vr.branchNumber
       activeMinSboxes := max vl.activeMinSboxes vr.activeMinSboxes
       latency := max vl.latency vr.latency + 1
-      gateCount := vl.gateCount + vr.gateCount + 1 }
+      gateCount := vl.gateCount + vr.gateCount + 1
+      circuitDepth := max vl.circuitDepth vr.circuitDepth + 1 }
   | .round d bn c =>
     let child := v c
     { algebraicDegree := d * child.algebraicDegree
@@ -72,7 +75,8 @@ def evalCryptoOpCS (op : CryptoOp) (_env : Nat → CryptoSemantics)
       branchNumber := bn
       activeMinSboxes := child.activeMinSboxes + 1
       latency := child.latency + 2
-      gateCount := child.gateCount + d + bn }
+      gateCount := child.gateCount + d + bn
+      circuitDepth := child.circuitDepth + 2 }
   | .compose f s =>
     let vf := v f; let vs := v s
     { algebraicDegree := vf.algebraicDegree * vs.algebraicDegree
@@ -81,7 +85,8 @@ def evalCryptoOpCS (op : CryptoOp) (_env : Nat → CryptoSemantics)
       branchNumber := min vf.branchNumber vs.branchNumber
       activeMinSboxes := vf.activeMinSboxes + vs.activeMinSboxes
       latency := vf.latency + vs.latency
-      gateCount := vf.gateCount + vs.gateCount }
+      gateCount := vf.gateCount + vs.gateCount
+      circuitDepth := vf.circuitDepth + vs.circuitDepth }
   | .parallel l r =>
     let vl := v l; let vr := v r
     { algebraicDegree := max vl.algebraicDegree vr.algebraicDegree
@@ -90,7 +95,8 @@ def evalCryptoOpCS (op : CryptoOp) (_env : Nat → CryptoSemantics)
       branchNumber := min vl.branchNumber vr.branchNumber
       activeMinSboxes := vl.activeMinSboxes + vr.activeMinSboxes
       latency := max vl.latency vr.latency
-      gateCount := vl.gateCount + vr.gateCount }
+      gateCount := vl.gateCount + vr.gateCount
+      circuitDepth := max vl.circuitDepth vr.circuitDepth }
   | .iterate n b =>
     let body := v b
     { algebraicDegree := safePow body.algebraicDegree n
@@ -99,7 +105,8 @@ def evalCryptoOpCS (op : CryptoOp) (_env : Nat → CryptoSemantics)
       branchNumber := body.branchNumber
       activeMinSboxes := n * body.activeMinSboxes
       latency := n * body.latency
-      gateCount := n * body.gateCount }
+      gateCount := n * body.gateCount
+      circuitDepth := n * body.circuitDepth }
   | .const val =>
     { algebraicDegree := val
       differentialUniformity := 0
@@ -107,7 +114,8 @@ def evalCryptoOpCS (op : CryptoOp) (_env : Nat → CryptoSemantics)
       branchNumber := 0
       activeMinSboxes := 0
       latency := 0
-      gateCount := 0 }
+      gateCount := 0
+      circuitDepth := 0 }
   | .spnBlock r s l =>
     let vs := v s; let vl := v l
     { algebraicDegree := safePow (vs.algebraicDegree * vl.algebraicDegree) r
@@ -116,7 +124,8 @@ def evalCryptoOpCS (op : CryptoOp) (_env : Nat → CryptoSemantics)
       branchNumber := vl.branchNumber
       activeMinSboxes := r * (mds_branchNumber vl.branchNumber) / 2
       latency := r * (vs.latency + vl.latency)
-      gateCount := r * (vs.gateCount + vl.gateCount) }
+      gateCount := r * (vs.gateCount + vl.gateCount)
+      circuitDepth := r * (vs.circuitDepth + vl.circuitDepth) }
   | .feistelBlock r f =>
     let vf := v f
     { algebraicDegree := safePow vf.algebraicDegree r
@@ -125,7 +134,8 @@ def evalCryptoOpCS (op : CryptoOp) (_env : Nat → CryptoSemantics)
       branchNumber := vf.branchNumber
       activeMinSboxes := r * vf.activeMinSboxes
       latency := r * vf.latency
-      gateCount := r * vf.gateCount }
+      gateCount := r * vf.gateCount
+      circuitDepth := r * vf.circuitDepth }
   | .spongeBlock rt cap p =>
     let vp := v p
     { algebraicDegree := safePow vp.algebraicDegree rt
@@ -136,7 +146,8 @@ def evalCryptoOpCS (op : CryptoOp) (_env : Nat → CryptoSemantics)
       branchNumber := vp.branchNumber
       activeMinSboxes := rt * vp.activeMinSboxes
       latency := rt * vp.latency + cap
-      gateCount := rt * vp.gateCount }
+      gateCount := rt * vp.gateCount
+      circuitDepth := rt * vp.circuitDepth }
   | .arxBlock r a rot x =>
     let va := v a; let vrot := v rot; let vx := v x
     { algebraicDegree := safePow (va.algebraicDegree + vrot.algebraicDegree + vx.algebraicDegree) r
@@ -145,7 +156,8 @@ def evalCryptoOpCS (op : CryptoOp) (_env : Nat → CryptoSemantics)
       branchNumber := min va.branchNumber (min vrot.branchNumber vx.branchNumber)
       activeMinSboxes := r * (va.activeMinSboxes + vrot.activeMinSboxes + vx.activeMinSboxes)
       latency := r * (va.latency + vrot.latency + vx.latency)
-      gateCount := r * (va.gateCount + vrot.gateCount + vx.gateCount) }
+      gateCount := r * (va.gateCount + vrot.gateCount + vx.gateCount)
+      circuitDepth := r * (va.circuitDepth + vrot.circuitDepth + vx.circuitDepth) }
 
 -- ============================================================
 -- Section 2: NodeSemantics proof obligations
@@ -241,7 +253,7 @@ instance : NodeSemantics CryptoOp CryptoSemantics where
 -- ============================================================
 
 -- Verify the instance works: evaluate sbox(7, child) in CryptoSemantics
-#eval evalCryptoOpCS (.sbox 7 0) (fun _ => default) (fun _ => ⟨1, 4, 16, 5, 0, 0, 0⟩)
+#eval evalCryptoOpCS (.sbox 7 0) (fun _ => default) (fun _ => ⟨1, 4, 16, 5, 0, 0, 0, 0⟩)
 
 /-- ConsistentValuation over CryptoSemantics compiles (the type checks). -/
 example : ConsistentValuation (Val := CryptoSemantics) (EGraph.empty : EGraph CryptoOp)

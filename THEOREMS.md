@@ -1,6 +1,6 @@
 ═══ Specification Audit: superhash_lean ═══
-Theorems: 1113  Lemmas: 0  Pipeline: 78
-Clean: 991  T1(vacuity): 1  T1.5(identity): 0  T2(weak): 10  T3(structural): 18  T4(no-witness): 93
+Theorems: 1120  Lemmas: 0  Pipeline: 78
+Clean: 997  T1(vacuity): 1  T1.5(identity): 0  T2(weak): 10  T3(structural): 18  T4(no-witness): 94
 
 ── TIER 1 — VACUITY (1 issues) ──
   theorem zest_parallel_speedup
@@ -44,8 +44,8 @@ Clean: 991  T1(vacuity): 1  T1.5(identity): 0  T2(weak): 10  T3(structural): 18 
     SuperHash/Pipeline/EMatchSpec.lean:999
     ⚠ T2-PIPELINE-SORRY: pipeline theorem contains sorry — top-level result is unverified
 
-  theorem designLoop_preserves_cv
-    SuperHash/Pipeline/MasterTheoremV2.lean:36
+  theorem designLoop_preserves_full
+    SuperHash/Pipeline/MasterTheoremV2.lean:41
     ⚠ T2-EXISTENTIAL-ONLY: conclusion is existential without equality/equivalence — may not reach concrete evaluation
 
 ── TIER 3 — STRUCTURAL (18 issues) ──
@@ -108,11 +108,11 @@ Clean: 991  T1(vacuity): 1  T1.5(identity): 0  T2(weak): 10  T3(structural): 18 
     ⚠ T3-MANY-HYPOTHESES: 10 hypotheses on pipeline theorem — verify each is satisfiable and necessary
 
   theorem superhash_pipeline_correct_crypto [PIPELINE]
-    SuperHash/Pipeline/MasterTheoremCS.lean:106
+    SuperHash/Pipeline/MasterTheoremCS.lean:113
     ⚠ T3-MANY-HYPOTHESES: 13 hypotheses on pipeline theorem — verify each is satisfiable and necessary
 
   theorem pipeline_soundness_crypto [PIPELINE]
-    SuperHash/Pipeline/MasterTheoremCS.lean:160
+    SuperHash/Pipeline/MasterTheoremCS.lean:167
     ⚠ T3-MANY-HYPOTHESES: 12 hypotheses on pipeline theorem — verify each is satisfiable and necessary
 
   theorem patternSoundRules_preserveCV [PIPELINE]
@@ -123,7 +123,7 @@ Clean: 991  T1(vacuity): 1  T1.5(identity): 0  T2(weak): 10  T3(structural): 18 
     SuperHash/Rules/SoundRule.lean:87
     ⚠ T3-NAME-MISMATCH: name contains 'sound' but conclusion has no equality, biconditional, or implication
 
-── TIER 4 — NO WITNESS (93 issues) ──
+── TIER 4 — NO WITNESS (94 issues) ──
   theorem add_node_triple
     SuperHash/EGraph/AddNodeTriple.lean:17
     ⚠ T4-NO-WITNESS: 5 Prop hypotheses but no non-vacuity example found in Tests/NonVacuity*.lean or same file
@@ -182,6 +182,10 @@ Clean: 991  T1(vacuity): 1  T1.5(identity): 0  T2(weak): 10  T3(structural): 18 
 
   theorem consistent_valuation_step
     SuperHash/EGraph/Consistency.lean:1445
+    ⚠ T4-NO-WITNESS: 7 Prop hypotheses but no non-vacuity example found in Tests/NonVacuity*.lean or same file
+
+  theorem consistent_valuation_unique_acyclic
+    SuperHash/EGraph/Consistency.lean:1489
     ⚠ T4-NO-WITNESS: 7 Prop hypotheses but no non-vacuity example found in Tests/NonVacuity*.lean or same file
 
   theorem IsRootAt_of_rootD_self

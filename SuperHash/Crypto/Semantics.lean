@@ -97,10 +97,14 @@ structure CryptoSemantics where
   /-- Gate count: abstract area units proportional to logic gates.
       Unit: abstract (1 = cost of one basic operation). -/
   gateCount : Nat
+  /-- Circuit depth: critical path length in combinational logic.
+      Unit: abstract (1 = depth of one S-box or linear layer).
+      v4.5.4: enables latency vs throughput trade-off analysis. -/
+  circuitDepth : Nat
   deriving Repr, DecidableEq, BEq, Hashable
 
 instance : Inhabited CryptoSemantics where
-  default := ⟨0, 0, 0, 0, 0, 0, 0⟩
+  default := ⟨0, 0, 0, 0, 0, 0, 0, 0⟩
 
 -- ============================================================
 -- Section 4: Dominance relation (Pareto over CryptoSemantics)
@@ -117,22 +121,24 @@ def cryptoDominates (a b : CryptoSemantics) : Prop :=
   a.activeMinSboxes ≥ b.activeMinSboxes ∧
   a.latency ≤ b.latency ∧
   a.gateCount ≤ b.gateCount ∧
+  a.circuitDepth ≤ b.circuitDepth ∧
   (a.algebraicDegree > b.algebraicDegree ∨
    a.differentialUniformity < b.differentialUniformity ∨
    a.linearBias < b.linearBias ∨
    a.branchNumber > b.branchNumber ∨
    a.activeMinSboxes > b.activeMinSboxes ∨
    a.latency < b.latency ∨
-   a.gateCount < b.gateCount)
+   a.gateCount < b.gateCount ∨
+   a.circuitDepth < b.circuitDepth)
 
 theorem cryptoDominates_irrefl (a : CryptoSemantics) : ¬cryptoDominates a a := by
-  intro ⟨_, _, _, _, _, _, _, h⟩
-  rcases h with h | h | h | h | h | h | h <;> omega
+  intro ⟨_, _, _, _, _, _, _, _, h⟩
+  rcases h with h | h | h | h | h | h | h | h <;> omega
 
 theorem cryptoDominates_asymm (a b : CryptoSemantics) :
     cryptoDominates a b → ¬cryptoDominates b a := by
-  intro ⟨h1, h2, h3, h4, h5, h6, h7, h8⟩ ⟨g1, g2, g3, g4, g5, g6, g7, _g8⟩
-  rcases h8 with h | h | h | h | h | h | h <;> omega
+  intro ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9⟩ ⟨g1, g2, g3, g4, g5, g6, g7, g8, _g9⟩
+  rcases h9 with h | h | h | h | h | h | h | h <;> omega
 
 -- ============================================================
 -- Section 5: Concrete instances
@@ -180,6 +186,7 @@ def aes128Semantics : CryptoSemantics where
   activeMinSboxes := 25  -- 5 * 5 (5 rounds of 2-round pairs)
   latency := 10
   gateCount := 50
+  circuitDepth := 40  -- 10 rounds × depth 4 (SubBytes + ShiftRows + MixColumns + AddRoundKey)
 
 /-- Poseidon-128 design as CryptoSemantics.
     NOTE: δ=2 (APN) assumed from Grassi et al. 2019 for x^5 over Fp.
@@ -192,6 +199,7 @@ def poseidon128Semantics : CryptoSemantics where
   activeMinSboxes := 16
   latency := 8
   gateCount := 24
+  circuitDepth := 57  -- 57 rounds × depth 1 (x^5 is single-depth in arithmetic circuit)
 
 -- ============================================================
 -- Section 6: S-box property theorems (adapted from LeanHash)

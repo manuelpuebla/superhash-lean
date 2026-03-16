@@ -140,6 +140,55 @@ theorem attack_extractable_sound : ExtractableSound AttackOp AttackExpr AttackSe
     simp only [reconstructAttack] at hrecon
     split at hrecon <;> simp at hrecon; subst hrecon
     simp [EvalExpr.evalExpr, AttackExpr.eval, NodeSemantics.evalOp, evalAttackOpAS]
+  -- v4.5.4: 6 new single-child attack types (same proof pattern as diffChar)
+  | slideAttack p c =>
+    simp only [reconstructAttack] at hrecon
+    split at hrecon <;> simp at hrecon; subst hrecon
+    simp only [EvalExpr.evalExpr, AttackExpr.eval, NodeSemantics.evalOp, evalAttackOpAS]
+    have h0 := hchildren 0 (by simp) (by simp [NodeOps.children, AttackOp.children])
+    simp only [EvalExpr.evalExpr, NodeOps.children, AttackOp.children,
+               List.getElem_cons_zero] at h0
+    rw [h0]
+  | integralAttack d c =>
+    simp only [reconstructAttack] at hrecon
+    split at hrecon <;> simp at hrecon; subst hrecon
+    simp only [EvalExpr.evalExpr, AttackExpr.eval, NodeSemantics.evalOp, evalAttackOpAS]
+    have h0 := hchildren 0 (by simp) (by simp [NodeOps.children, AttackOp.children])
+    simp only [EvalExpr.evalExpr, NodeOps.children, AttackOp.children,
+               List.getElem_cons_zero] at h0
+    rw [h0]
+  | cubeAttack d c =>
+    simp only [reconstructAttack] at hrecon
+    split at hrecon <;> simp at hrecon; subst hrecon
+    simp only [EvalExpr.evalExpr, AttackExpr.eval, NodeSemantics.evalOp, evalAttackOpAS]
+    have h0 := hchildren 0 (by simp) (by simp [NodeOps.children, AttackOp.children])
+    simp only [EvalExpr.evalExpr, NodeOps.children, AttackOp.children,
+               List.getElem_cons_zero] at h0
+    rw [h0]
+  | zeroSumPartition d c =>
+    simp only [reconstructAttack] at hrecon
+    split at hrecon <;> simp at hrecon; subst hrecon
+    simp only [EvalExpr.evalExpr, AttackExpr.eval, NodeSemantics.evalOp, evalAttackOpAS]
+    have h0 := hchildren 0 (by simp) (by simp [NodeOps.children, AttackOp.children])
+    simp only [EvalExpr.evalExpr, NodeOps.children, AttackOp.children,
+               List.getElem_cons_zero] at h0
+    rw [h0]
+  | invariantSubspace bs c =>
+    simp only [reconstructAttack] at hrecon
+    split at hrecon <;> simp at hrecon; subst hrecon
+    simp only [EvalExpr.evalExpr, AttackExpr.eval, NodeSemantics.evalOp, evalAttackOpAS]
+    have h0 := hchildren 0 (by simp) (by simp [NodeOps.children, AttackOp.children])
+    simp only [EvalExpr.evalExpr, NodeOps.children, AttackOp.children,
+               List.getElem_cons_zero] at h0
+    rw [h0]
+  | divisionProperty bs c =>
+    simp only [reconstructAttack] at hrecon
+    split at hrecon <;> simp at hrecon; subst hrecon
+    simp only [EvalExpr.evalExpr, AttackExpr.eval, NodeSemantics.evalOp, evalAttackOpAS]
+    have h0 := hchildren 0 (by simp) (by simp [NodeOps.children, AttackOp.children])
+    simp only [EvalExpr.evalExpr, NodeOps.children, AttackOp.children,
+               List.getElem_cons_zero] at h0
+    rw [h0]
 
 -- Smoke tests
 #eval AttackExpr.eval (.diffChar 6 (.const 0)) (fun _ => default)

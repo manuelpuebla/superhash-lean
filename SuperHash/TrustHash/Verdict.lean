@@ -111,9 +111,28 @@ def higherOrderCost (spec : HashSpec) : Nat :=
   let degAfterR := iteratedBcd11 totalBits 0 spec.gamma spec.numRounds
   degAfterR + 1
 
+/-- Slide attack cost: exploits periodic structure.
+    For standard constructions without key-dependent round ordering,
+    slide complexity is outputBits (no slide vulnerability). -/
+def slideCost (spec : HashSpec) : Nat := spec.outputBits
+
+/-- Integral attack cost: via division property propagation.
+    Conservative: uses algebraic degree as proxy for integral distinguisher dimension.
+    Higher degree → harder to find integral property → higher cost. -/
+def integralCost (spec : HashSpec) : Nat :=
+  let degAfterR := iteratedBcd11 (spec.sboxBits * spec.numSboxes) 0 spec.gamma spec.numRounds
+  if degAfterR ≤ 1 then 0 else degAfterR
+
+/-- Invariant subspace attack cost: exploits linear subspace stability.
+    For constructions with nonlinear S-boxes and MDS mixing, no known invariant
+    subspaces exist. Cost = outputBits (conservative: no vulnerability). -/
+def invariantSubspaceCost (spec : HashSpec) : Nat := spec.outputBits
+
 /-- Combined structural cost: min of all structural bounds. -/
 def structuralCost (spec : HashSpec) : Nat :=
-  min (differentialCost spec) (min (algebraicCost spec) (min (dpCost spec) (higherOrderCost spec)))
+  min (differentialCost spec) (min (algebraicCost spec) (min (dpCost spec)
+    (min (higherOrderCost spec) (min (slideCost spec)
+      (min (integralCost spec) (invariantSubspaceCost spec))))))
 
 -- ============================================================
 -- Section 4: Full Verdict
@@ -133,6 +152,12 @@ structure Verdict where
   dp : Nat
   /-- Higher-order differential cost -/
   higherOrder : Nat
+  /-- Slide attack cost (periodic structure) -/
+  slide : Nat
+  /-- Integral attack cost (division property) -/
+  integral : Nat
+  /-- Invariant subspace attack cost -/
+  invariantSubspace : Nat
   /-- Overall security = min(generic, structural) -/
   security : Nat
   /-- Binding constraint -/
@@ -148,20 +173,29 @@ def computeFullVerdict (spec : HashSpec) : Verdict :=
   let alg := algebraicCost spec
   let dp := dpCost spec
   let ho := higherOrderCost spec
-  let structural := min diff (min alg (min dp ho))
+  let sl := slideCost spec
+  let integ := integralCost spec
+  let inv := invariantSubspaceCost spec
+  let structural := min diff (min alg (min dp (min ho (min sl (min integ inv)))))
   let overall := min gen structural
   let binding :=
     if overall = gen then "birthday"
     else if overall = diff then "differential"
     else if overall = alg then "algebraic"
     else if overall = dp then "DP"
-    else "higher-order"
+    else if overall = ho then "higher-order"
+    else if overall = sl then "slide"
+    else if overall = integ then "integral"
+    else "invariant-subspace"
   { spec := spec
     generic := gen
     differential := diff
     algebraic := alg
     dp := dp
     higherOrder := ho
+    slide := sl
+    integral := integ
+    invariantSubspace := inv
     security := overall
     bindingConstraint := binding
     isOptimal := structural ≥ gen }
@@ -236,6 +270,24 @@ theorem verdict_le_differential (spec : HashSpec) :
   simp only [computeFullVerdict]
   omega
 
+/-- Verdict security ≤ slide cost. -/
+theorem verdict_le_slide (spec : HashSpec) :
+    (computeFullVerdict spec).security ≤ slideCost spec := by
+  simp only [computeFullVerdict]
+  omega
+
+/-- Verdict security ≤ integral cost. -/
+theorem verdict_le_integral (spec : HashSpec) :
+    (computeFullVerdict spec).security ≤ integralCost spec := by
+  simp only [computeFullVerdict]
+  omega
+
+/-- Verdict security ≤ invariant subspace cost. -/
+theorem verdict_le_invariantSubspace (spec : HashSpec) :
+    (computeFullVerdict spec).security ≤ invariantSubspaceCost spec := by
+  simp only [computeFullVerdict]
+  omega
+
 /-- More rounds → higher (or equal) differential cost (monotone). -/
 theorem differential_mono_rounds (spec1 spec2 : HashSpec)
     (h_same : spec1.branchNumber = spec2.branchNumber ∧
@@ -296,15 +348,18 @@ theorem algebraicCost_mono_rounds (spec1 spec2 : HashSpec)
     · -- Both > 1: multiply monotonicity
       exact Nat.mul_le_mul_left _ (ilog2_mono _ _ h_mono)
 
-/-- Local unfold: verdict security = min(genericFloor, min(diff, min(alg, min(dp, ho)))). -/
+/-- Local unfold: verdict security = min(genericFloor, structural) with all 7 components. -/
 theorem verdict_security_eq (spec : HashSpec) :
     (computeFullVerdict spec).security =
     min (genericFloor spec) (min (differentialCost spec)
-      (min (algebraicCost spec) (min (dpCost spec) (higherOrderCost spec)))) := rfl
+      (min (algebraicCost spec) (min (dpCost spec)
+        (min (higherOrderCost spec) (min (slideCost spec)
+          (min (integralCost spec) (invariantSubspaceCost spec))))))) := rfl
 
 /-- **Verdict security is monotone in rounds (all other params equal).**
     v4.5.2 A4: Master monotonicity theorem. Composes genericFloor (equal),
-    differential (existing), algebraic (A3), dp (equal), higherOrder (A2).
+    differential (existing), algebraic (A3), dp (equal), higherOrder (A2),
+    slide (equal via outputBits), integral (mono via BCD11), invariantSubspace (equal).
     `min` of nondecreasing functions is nondecreasing. -/
 theorem verdict_security_mono_rounds (spec1 spec2 : HashSpec)
     (h_output : spec1.outputBits = spec2.outputBits)
@@ -327,7 +382,25 @@ theorem verdict_security_mono_rounds (spec1 spec2 : HashSpec)
   have h_dp : dpCost spec1 = dpCost spec2 := by
     simp only [dpCost]; rw [htree, hd, hsdeg]
   have h_ho := higherOrderCost_mono_rounds spec1 spec2 ⟨hsb, hns, hg⟩ h_gamma h_rounds
-  rw [h_gen, h_dp]; omega
+  -- slideCost depends only on outputBits → equal
+  have h_sl : slideCost spec1 = slideCost spec2 := by
+    simp only [slideCost]; rw [h_output]
+  -- integralCost uses iteratedBcd11 → monotone by iterated_bcd11_mono_general
+  have h_integ : integralCost spec1 ≤ integralCost spec2 := by
+    simp only [integralCost]
+    rw [hsb, hns, hg]
+    have h_bcd := iterated_bcd11_mono_general
+      (spec2.sboxBits * spec2.numSboxes) 0 spec2.gamma
+      spec1.numRounds spec2.numRounds (hg ▸ h_gamma) h_rounds
+    split
+    · omega
+    · rename_i h1; split
+      · rename_i h2; omega
+      · exact h_bcd
+  -- invariantSubspaceCost depends only on outputBits → equal
+  have h_inv : invariantSubspaceCost spec1 = invariantSubspaceCost spec2 := by
+    simp only [invariantSubspaceCost]; rw [h_output]
+  rw [h_gen, h_dp, h_sl, h_inv]; omega
 
 -- ============================================================
 -- Section 9: Non-vacuity
