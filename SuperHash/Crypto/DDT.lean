@@ -121,7 +121,7 @@ theorem certSecurity_monotone (cs : CertifiedSbox) (a1 a2 : Nat) (h : a1 ≤ a2)
 -- ============================================================
 
 example : presentCertified.delta = 4 := rfl
-example : certSecurityBits presentCertified 75 = 150 := by native_decide
+example : certSecurityBits presentCertified 155 = 310 := by native_decide
 example : presentSbox.apply 0 = 12 := by native_decide
 example : presentSbox.apply 5 = 0 := by native_decide
 

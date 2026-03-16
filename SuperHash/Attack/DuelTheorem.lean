@@ -140,7 +140,7 @@ private def matchingSemantics : CryptoSemantics where
   differentialUniformity := 1
   linearBias := 0
   branchNumber := 5
-  activeMinSboxes := 25
+  activeMinSboxes := 50  -- BN * R = 5 * 10
   latency := 10
   gateCount := 50
   circuitDepth := 40

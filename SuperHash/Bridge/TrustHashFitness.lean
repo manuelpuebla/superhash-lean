@@ -72,7 +72,7 @@ def computeVerdict (outputBits sboxBits sboxDeg delta gamma branchNum numRounds 
   let generic := outputBits / 2
 
   -- Differential cost: activeSboxes × (sboxBits - log2(δ))
-  let activeSboxes := branchNum * (numRounds / 2)
+  let activeSboxes := branchNum * numRounds
   let diffCost := if delta ≤ 1 then outputBits
     else activeSboxes * (sboxBits - ilog2 delta)
 
@@ -119,7 +119,7 @@ theorem verdict_degree_mono_step (out n d delta gamma bn r s tw : Nat)
 def aesVerdict := computeVerdict 128 8 7 4 4 5 10 16 5
 
 #eval aesVerdict
--- Expected: generic=64, diff=150, algCost based on BCD11 degree after 10 rounds
+-- Expected: generic=64, diff=300, algCost based on BCD11 degree after 10 rounds
 
 -- Poseidon-128 (t=3): 8 full rounds, deg=5, delta=2, gamma=4, BN=4, tw=3
 def poseidonVerdict := computeVerdict 256 64 5 2 4 4 8 3 3
@@ -138,8 +138,8 @@ def presentVerdict := computeVerdict 128 4 3 4 4 5 31 16 4
 /-- AES generic floor = 64 bits. -/
 example : aesVerdict.genericFloor = 64 := by native_decide
 
-/-- AES differential cost = 150 bits (25 active × 6 bits each). -/
-example : aesVerdict.differentialCost = 150 := by native_decide
+/-- AES differential cost = 300 bits (50 active × 6 bits each). -/
+example : aesVerdict.differentialCost = 300 := by native_decide
 
 /-- AES uses BCD11 degree after 10 rounds. -/
 example : aesVerdict.bcdDegreeAfterRounds = iteratedBcd11 128 0 4 10 := rfl

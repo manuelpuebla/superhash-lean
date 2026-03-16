@@ -90,11 +90,11 @@ def multiSboxUHFMaxOutput (sboxBits activeSboxes delta : Nat) : Nat :=
 theorem multiUHF_eq_sourceEntropy (n a delta : Nat) :
     multiSboxUHFMaxOutput n a delta = sourceEntropy n a delta := rfl
 
-/-- AES full cipher: 25 active S-boxes → max UHF output = 150 bits. -/
-example : multiSboxUHFMaxOutput 8 25 4 = 150 := by native_decide
+/-- AES full cipher: 50 active S-boxes → max UHF output = 300 bits. -/
+example : multiSboxUHFMaxOutput 8 50 4 = 300 := by native_decide
 
-/-- Poseidon full cipher: 16 active S-boxes → max UHF output = 1008 bits. -/
-example : multiSboxUHFMaxOutput 64 16 2 = 1008 := by native_decide
+/-- Poseidon full cipher: 32 active S-boxes → max UHF output = 2016 bits. -/
+example : multiSboxUHFMaxOutput 64 32 2 = 2016 := by native_decide
 
 -- ============================================================
 -- Section 4: Design quality checker

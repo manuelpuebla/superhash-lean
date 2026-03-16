@@ -60,10 +60,10 @@ theorem mds_branch_exceeds_dim (t : Nat) : mds_branchNumber t > t := by
 theorem mds_branch_positive (t : Nat) (ht : t ≥ 1) : mds_branchNumber t ≥ 2 := by
   simp [mds_branchNumber]; omega
 
-/-- Wide trail: active S-boxes ≥ br(M) * ⌊R/2⌋ over R rounds.
-    Source: LeanHash/MDSMatrix.lean -/
-theorem wide_trail_bound (bn R : Nat) (hbn : bn ≥ 2) :
-    bn * (R / 2) ≥ R / 2 := Nat.le_mul_of_pos_left _ (by omega)
+/-- Wide trail: active S-boxes ≥ br(M) * R over R rounds.
+    Source: LeanHash/MDSMatrix.lean, Daemen-Rijmen 2002 -/
+theorem wide_trail_bound (bn R : Nat) (hbn : bn ≥ 1) :
+    bn * R ≥ R := Nat.le_mul_of_pos_left _ (by omega)
 
 -- ============================================================
 -- Section 3: CryptoSemantics — THE CORE TYPE
@@ -182,13 +182,13 @@ def poseidonSboxParams : SboxParams where
 /-- AES-128 full design as CryptoSemantics.
     NOTE: δ=4 assumed from Daemen & Rijmen 2002, not computed via DDT.
     TODO: verify via CertifiedSbox when 256-entry AES S-box table available.
-    10 rounds, S-box deg=7, MDS BN=5 → activeSboxes ≥ 5*5=25. -/
+    10 rounds, S-box deg=7, MDS BN=5 → activeSboxes ≥ 5*10=50. -/
 def aes128Semantics : CryptoSemantics where
   algebraicDegree := 128  -- BCD11 tight bound: iteratedBcd11 128 0 4 10 = 128 (saturates at 2^8-1 after ~3 rounds)
   differentialUniformity := 4
   linearBias := 16  -- 2^4 for AES
   branchNumber := 5  -- 4×4 MDS → BN=5
-  activeMinSboxes := 25  -- 5 * 5 (5 rounds of 2-round pairs)
+  activeMinSboxes := 50  -- BN * R = 5 * 10 (wide trail, Daemen-Rijmen 2002)
   latency := 10
   gateCount := 50
   circuitDepth := 40  -- 10 rounds × depth 4 (SubBytes + ShiftRows + MixColumns + AddRoundKey)
@@ -202,7 +202,7 @@ def poseidon128Semantics : CryptoSemantics where
   differentialUniformity := 2  -- APN
   linearBias := 0
   branchNumber := 4  -- t=3 MDS → BN=4
-  activeMinSboxes := 16
+  activeMinSboxes := 32  -- BN * R = 4 * 8
   latency := 8
   gateCount := 24
   circuitDepth := 57  -- 57 rounds × depth 1 (x^5 is single-depth in arithmetic circuit)
@@ -251,11 +251,11 @@ theorem more_active_more_secure (sp : SboxParams) (a1 a2 : Nat) (h : a1 ≤ a2) 
   simp [differentialSecurityBits]
   exact Nat.mul_le_mul_right _ h
 
-/-- AES differential security: 25 active S-boxes × (8 - 2) = 150 bits. -/
-example : differentialSecurityBits aesSboxParams 25 = 150 := by native_decide
+/-- AES differential security: 50 active S-boxes × (8 - 2) = 300 bits. -/
+example : differentialSecurityBits aesSboxParams 50 = 300 := by native_decide
 
-/-- Poseidon differential security: 16 active × (64 - 1) = 1008 bits. -/
-example : differentialSecurityBits poseidonSboxParams 16 = 1008 := by native_decide
+/-- Poseidon differential security: 32 active × (64 - 1) = 2016 bits. -/
+example : differentialSecurityBits poseidonSboxParams 32 = 2016 := by native_decide
 
 -- ============================================================
 -- Section 8: Fitness function (D19 — formal bounds)

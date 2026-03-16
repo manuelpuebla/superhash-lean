@@ -87,15 +87,15 @@ theorem sourceEntropy_mono_bits (n1 n2 activeSboxes delta : Nat)
 -- Section 3: Concrete verifications
 -- ============================================================
 
--- AES: 25 active × (8 - ilog2(4)) = 25 × (8-2) = 150
-#eval sourceEntropy 8 25 4    -- 150
--- Poseidon: 16 active × (64 - ilog2(2)) = 16 × (64-1) = 1008
-#eval sourceEntropy 64 16 2   -- 1008
--- PRESENT: 75 active × (4 - ilog2(4)) = 75 × (4-2) = 150
-#eval sourceEntropy 4 75 4    -- 150
+-- AES: 50 active × (8 - ilog2(4)) = 50 × (8-2) = 300
+#eval sourceEntropy 8 50 4    -- 300
+-- Poseidon: 32 active × (64 - ilog2(2)) = 32 × (64-1) = 2016
+#eval sourceEntropy 64 32 2   -- 2016
+-- PRESENT: 155 active × (4 - ilog2(4)) = 155 × (4-2) = 310
+#eval sourceEntropy 4 155 4   -- 310
 
-example : sourceEntropy 8 25 4 = 150 := by native_decide
-example : sourceEntropy 64 16 2 = 1008 := by native_decide
-example : sourceEntropy 4 75 4 = 150 := by native_decide
+example : sourceEntropy 8 50 4 = 300 := by native_decide
+example : sourceEntropy 64 32 2 = 2016 := by native_decide
+example : sourceEntropy 4 155 4 = 310 := by native_decide
 
 end SuperHash

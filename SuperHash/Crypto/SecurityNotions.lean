@@ -482,11 +482,11 @@ theorem sha256_dominates_poseidon :
 -- Section 9: Bridge smoke tests
 -- ============================================================
 
--- AES-128 bridge: sboxBits=8, delta=4 -> diff=25*(8-2)=150; ilog2(7^10)=28 -> alg=28.
--- collisionBits = min(64, min(150, 28)) = 28.
+-- AES-128 bridge: sboxBits=8, delta=4 -> diff=50*(8-2)=300; ilog2(128)=7 -> alg=7.
+-- collisionBits = min(64, min(300, 7)) = 7.
 #eval cryptoSemanticsToProfile aes128Semantics 8 128
--- Poseidon-128 bridge: sboxBits=64, delta=2 -> diff=16*(64-1)=1008; ilog2(5^8)=18 -> alg=18.
--- collisionBits = min(128, min(1008, 18)) = 18.
+-- Poseidon-128 bridge: sboxBits=64, delta=2 -> diff=32*(64-1)=2016; ilog2(5^8)=18 -> alg=18.
+-- collisionBits = min(128, min(2016, 18)) = 18.
 #eval cryptoSemanticsToProfile poseidon128Semantics 64 256
 
 -- ============================================================

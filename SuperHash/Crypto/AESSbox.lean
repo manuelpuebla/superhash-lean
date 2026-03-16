@@ -93,10 +93,10 @@ def aesParams : SboxParams :=
 -- Security from certified AES S-box
 -- ============================================================
 
--- AES differential security: 25 active × (8 - log2(4)) = 25 × 6 = 150 bits
-#eval certSecurityBits aesCertified 25
+-- AES differential security: 50 active × (8 - log2(4)) = 50 × 6 = 300 bits
+#eval certSecurityBits aesCertified 50
 
-example : certSecurityBits aesCertified 25 = 150 := by native_decide
+example : certSecurityBits aesCertified 50 = 300 := by native_decide
 
 /-- AES S-box has δ=4 (CERTIFIED by DDT computation, not assumed). -/
 example : aesCertified.delta = 4 := rfl

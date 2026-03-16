@@ -284,7 +284,7 @@ def CryptoExpr.evalCS (e : CryptoExpr) (env : Nat → CryptoSemantics) : CryptoS
       differentialUniformity := max vs.differentialUniformity vl.differentialUniformity
       linearBias := max vs.linearBias vl.linearBias
       branchNumber := vl.branchNumber
-      activeMinSboxes := vl.branchNumber * (r / 2)
+      activeMinSboxes := vl.branchNumber * r
       latency := r * (vs.latency + vl.latency)
       gateCount := r * (vs.gateCount + vl.gateCount)
       circuitDepth := r * (vs.circuitDepth + vl.circuitDepth) }

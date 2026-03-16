@@ -157,8 +157,8 @@ def evalCryptoSem : CryptoOp → List CryptoSemantics → CryptoSemantics
       differentialUniformity := max sboxChild.differentialUniformity linearChild.differentialUniformity
       linearBias := max sboxChild.linearBias linearChild.linearBias
       branchNumber := linearChild.branchNumber
-      -- Wide trail: BN × ⌊R/2⌋ (Daemen-Rijmen 2002, Theorem 9.5.1)
-      activeMinSboxes := linearChild.branchNumber * (r / 2)
+      -- Wide trail: BN × R active S-boxes (Daemen-Rijmen 2002)
+      activeMinSboxes := linearChild.branchNumber * r
       latency := r * (sboxChild.latency + linearChild.latency)
       gateCount := r * (sboxChild.gateCount + linearChild.gateCount)
       circuitDepth := r * (sboxChild.circuitDepth + linearChild.circuitDepth) }

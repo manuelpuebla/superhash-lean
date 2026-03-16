@@ -81,23 +81,23 @@ def evaluateDesign (cfg : DesignConfig) (cs : CryptoSemantics) : Nat :=
 -- Section 3: Concrete evaluations
 -- ============================================================
 
--- AES-128 fitness: min(64, 150, 140) = 64 (birthday-bounded)
+-- AES-128 fitness: min(64, 300, 35) = 35 (algebraic-bounded)
 #eval evaluateDesign aes128Config aes128Semantics
--- birthday=64, diff=25*(8-2)=150, alg=5*log2(7^10)=5*28=140 → min=64
+-- birthday=64, diff=50*(8-2)=300, alg=5*log2(128)=5*7=35 → min=35
 
--- Poseidon-128 fitness: min(128, 1008, 54) = 54 (algebraic-bounded!)
+-- Poseidon-128 fitness: min(128, 2016, 54) = 54 (algebraic-bounded!)
 #eval evaluateDesign poseidon128Config poseidon128Semantics
--- birthday=128, diff=16*(64-1)=1008, alg=3*log2(5^8)=3*18=54 → min=54
+-- birthday=128, diff=32*(64-1)=2016, alg=3*log2(5^8)=3*18=54 → min=54
 -- This correctly identifies that Poseidon with only 8 full rounds is ALGEBRAICALLY WEAK!
 
 /-- Poseidon with more rounds: degree = 5^65 ≈ 2^150 → alg = 3*150 = 450.
-    min(128, 1008, 450) = 128 (now birthday-bounded, secure!). -/
+    min(128, 4095, 450) = 128 (now birthday-bounded, secure!). -/
 def poseidon128_65rounds : CryptoSemantics where
   algebraicDegree := 5 ^ 65
   differentialUniformity := 2
   linearBias := 0
   branchNumber := 4
-  activeMinSboxes := 16
+  activeMinSboxes := 260  -- BN * R = 4 * 65
   latency := 65
   gateCount := 195
   circuitDepth := 65
@@ -146,7 +146,7 @@ example : evaluateDesign aes128Config aes128Semantics = 35 := by native_decide
 example : evaluateDesign poseidon128Config poseidon128Semantics = 54 := by native_decide
 
 /-- Non-vacuity: trivial design (deg=1) has fitness = 0. -/
-example : fitness 128 8 5 ⟨1, 4, 16, 5, 25, 10, 50, 40⟩ = 0 := by native_decide
+example : fitness 128 8 5 ⟨1, 4, 16, 5, 50, 10, 50, 40⟩ = 0 := by native_decide
 
 /-- Non-vacuity: the fitness function correctly identifies that
     Poseidon needs ≥65 rounds for 128-bit security. -/

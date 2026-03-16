@@ -164,8 +164,8 @@ example : (evalCryptoSem (.sbox 7 0) [liftNat 3]).algebraicDegree ≥
   native_decide
 
 /-- Non-vacuity: wide trail with BN=5 vs BN=3.
-    5 * (10/2) = 25 ≥ 3 * (10/2) = 15. -/
-example : 5 * (10 / 2) ≥ 3 * (10 / 2) := by native_decide
+    5 * 10 = 50 ≥ 3 * 10 = 30. -/
+example : 5 * 10 ≥ 3 * 10 := by native_decide
 
 /-- Non-vacuity: round reduce. AES with 9 rounds still ≥ 64 bit target.
     9 * 6 = 54 ≥ 50 (hypothetical target). -/
