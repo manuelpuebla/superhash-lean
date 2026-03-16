@@ -139,8 +139,8 @@ def evaluateCryptoOp (cfg : DesignConfig) (op : CryptoOp) (children : List Crypt
 -- Section 6: Non-vacuity
 -- ============================================================
 
-/-- Non-vacuity: AES fitness = 64 (birthday floor). -/
-example : evaluateDesign aes128Config aes128Semantics = 64 := by native_decide
+/-- Non-vacuity: AES fitness = 35 (algebraic-bounded with BCD11 tight degree=128). -/
+example : evaluateDesign aes128Config aes128Semantics = 35 := by native_decide
 
 /-- Non-vacuity: Poseidon (8 rounds) fitness = 54 (algebraic weakness!). -/
 example : evaluateDesign poseidon128Config poseidon128Semantics = 54 := by native_decide

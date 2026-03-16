@@ -370,23 +370,34 @@ theorem bridge_coll_eq_eSec (cs : CryptoSemantics) (sboxBits n : Nat) :
   unfold cryptoSemanticsToProfile
   simp
 
-/-- **Bridge collision bits are monotone in differential strength.**
-    More active S-boxes or lower delta cannot decrease collision security. -/
-theorem bridge_collision_le_diff (cs : CryptoSemantics) (sboxBits n : Nat) :
+/-- **Collision security bounded by differential security.**
+    Numeric bound: collisionBits ≤ differentialBitsOf.
+    NOTE: This is a numeric inequality between computed security parameters,
+    NOT an adversarial reduction (which would prove that breaking collision
+    implies breaking the differential property, per Rogaway-Shrimpton 2004). -/
+theorem bound_collision_by_diff (cs : CryptoSemantics) (sboxBits n : Nat) :
     (cryptoSemanticsToProfile cs sboxBits n).collisionBits ≤ differentialBitsOf sboxBits cs := by
   unfold cryptoSemanticsToProfile
   simp only
   exact Nat.le_trans (Nat.min_le_right _ _) (Nat.min_le_left _ _)
 
-/-- **Bridge collision bits are monotone in algebraic strength.** -/
-theorem bridge_collision_le_alg (cs : CryptoSemantics) (sboxBits n : Nat) :
+/-- **Collision security bounded by algebraic security.**
+    Numeric bound: collisionBits ≤ algebraicBitsOf.
+    NOTE: This is a numeric inequality between computed security parameters,
+    NOT an adversarial reduction (which would prove that breaking collision
+    implies breaking the algebraic property). -/
+theorem bound_collision_by_alg (cs : CryptoSemantics) (sboxBits n : Nat) :
     (cryptoSemanticsToProfile cs sboxBits n).collisionBits ≤ algebraicBitsOf cs := by
   unfold cryptoSemanticsToProfile
   simp only
   exact Nat.le_trans (Nat.min_le_right _ _) (Nat.min_le_right _ _)
 
-/-- **Bridge collision bits are at most birthday bound.** -/
-theorem bridge_collision_le_birthday (cs : CryptoSemantics) (sboxBits n : Nat) :
+/-- **Collision security bounded by birthday bound.**
+    Numeric bound: collisionBits ≤ n / 2.
+    NOTE: This is a numeric inequality between computed security parameters,
+    NOT a proof that the birthday attack is optimal (which would require
+    a lower bound argument in the random oracle model). -/
+theorem bound_collision_by_birthday (cs : CryptoSemantics) (sboxBits n : Nat) :
     (cryptoSemanticsToProfile cs sboxBits n).collisionBits ≤ n / 2 := by
   unfold cryptoSemanticsToProfile
   simp only

@@ -125,9 +125,9 @@ def sha256ExtendedFromProfile : ExtendedSecurityMetrics :=
 -- Section 4: Concrete validation
 -- ============================================================
 
-/-- AES-128 collision bits from pipeline = 28 (min of birthday, differential, algebraic). -/
+/-- AES-128 collision bits from pipeline = 7 (algebraic-bounded with BCD11 tight degree=128). -/
 theorem aes128_extended_collision :
-    aes128ExtendedFromCS.collisionBits = 28 := by native_decide
+    aes128ExtendedFromCS.collisionBits = 7 := by native_decide
 
 /-- AES-128 latency preserved from CryptoSemantics. -/
 theorem aes128_extended_latency :
@@ -150,7 +150,7 @@ theorem sha256_extended_latency :
 -- ============================================================
 
 /-- Non-vacuity 1: cryptoSemanticsToExtended produces concrete values. -/
-example : (cryptoSemanticsToExtended aes128Semantics 8 128).collisionBits = 28 := by
+example : (cryptoSemanticsToExtended aes128Semantics 8 128).collisionBits = 7 := by
   native_decide
 
 /-- Non-vacuity 2: Poseidon extended metrics are concrete. -/

@@ -107,10 +107,10 @@ def evalCryptoSem : CryptoOp → List CryptoSemantics → CryptoSemantics
       gateCount := child.gateCount + d + bn
       circuitDepth := child.circuitDepth + 2 }
 
-  -- Sequential composition (D15: degree MULTIPLIES, latency ADDS)
+  -- Sequential composition (D15: degree MULTIPLIES, δ MULTIPLIES (product bound, Lai 1994), latency ADDS)
   | .compose _ _, [f, s] =>
     { algebraicDegree := f.algebraicDegree * s.algebraicDegree
-      differentialUniformity := max f.differentialUniformity s.differentialUniformity
+      differentialUniformity := f.differentialUniformity * s.differentialUniformity
       linearBias := max f.linearBias s.linearBias
       branchNumber := min f.branchNumber s.branchNumber
       activeMinSboxes := f.activeMinSboxes + s.activeMinSboxes
@@ -157,7 +157,8 @@ def evalCryptoSem : CryptoOp → List CryptoSemantics → CryptoSemantics
       differentialUniformity := max sboxChild.differentialUniformity linearChild.differentialUniformity
       linearBias := max sboxChild.linearBias linearChild.linearBias
       branchNumber := linearChild.branchNumber
-      activeMinSboxes := r * (mds_branchNumber linearChild.branchNumber) / 2
+      -- Wide trail: BN × ⌊R/2⌋ (Daemen-Rijmen 2002, Theorem 9.5.1)
+      activeMinSboxes := linearChild.branchNumber * (r / 2)
       latency := r * (sboxChild.latency + linearChild.latency)
       gateCount := r * (sboxChild.gateCount + linearChild.gateCount)
       circuitDepth := r * (sboxChild.circuitDepth + linearChild.circuitDepth) }
@@ -178,6 +179,9 @@ def evalCryptoSem : CryptoOp → List CryptoSemantics → CryptoSemantics
   -- an attacker cannot directly observe capacity bits.
   | .spongeBlock rt cap _, [permChild] =>
     { algebraicDegree := safePow permChild.algebraicDegree rt
+      -- Capacity isolation: δ_eff = min(perm δ, 2^cap).
+      -- This is a SINGLE-QUERY bound (q=1). For q queries: min(δ, q²/2^c).
+      -- Source: Bertoni et al. 2008, "On the indifferentiability of the sponge construction"
       differentialUniformity :=
         if cap > 0 then min permChild.differentialUniformity (2 ^ cap)
         else permChild.differentialUniformity

@@ -241,7 +241,7 @@ def CryptoExpr.evalCS (e : CryptoExpr) (env : Nat → CryptoSemantics) : CryptoS
   | .compose f s =>
     let vf := f.evalCS env; let vs := s.evalCS env
     { algebraicDegree := vf.algebraicDegree * vs.algebraicDegree
-      differentialUniformity := max vf.differentialUniformity vs.differentialUniformity
+      differentialUniformity := vf.differentialUniformity * vs.differentialUniformity
       linearBias := max vf.linearBias vs.linearBias
       branchNumber := min vf.branchNumber vs.branchNumber
       activeMinSboxes := vf.activeMinSboxes + vs.activeMinSboxes
@@ -284,7 +284,7 @@ def CryptoExpr.evalCS (e : CryptoExpr) (env : Nat → CryptoSemantics) : CryptoS
       differentialUniformity := max vs.differentialUniformity vl.differentialUniformity
       linearBias := max vs.linearBias vl.linearBias
       branchNumber := vl.branchNumber
-      activeMinSboxes := r * (mds_branchNumber vl.branchNumber) / 2
+      activeMinSboxes := vl.branchNumber * (r / 2)
       latency := r * (vs.latency + vl.latency)
       gateCount := r * (vs.gateCount + vl.gateCount)
       circuitDepth := r * (vs.circuitDepth + vl.circuitDepth) }
@@ -301,6 +301,9 @@ def CryptoExpr.evalCS (e : CryptoExpr) (env : Nat → CryptoSemantics) : CryptoS
   | .spongeBlock rt cap p =>
     let vp := p.evalCS env
     { algebraicDegree := safePow vp.algebraicDegree rt
+      -- Capacity isolation: δ_eff = min(perm δ, 2^cap).
+      -- This is a SINGLE-QUERY bound (q=1). For q queries: min(δ, q²/2^c).
+      -- Source: Bertoni et al. 2008, "On the indifferentiability of the sponge construction"
       differentialUniformity :=
         if cap > 0 then min vp.differentialUniformity (2 ^ cap)
         else vp.differentialUniformity
